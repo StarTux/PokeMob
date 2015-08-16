@@ -1,0 +1,13 @@
+name: PokeMob
+author: StarTux
+version: 0.2
+main: com.winthier.pokemob.PokeMobPlugin
+commands:
+  pokemob:
+    description: admin command interface
+    permission: pokemob.pokemob
+    usage: /<command> [args]
+permissions:
+  pokemob.pokemob:
+    description: use the /pokemob command
+    default: op

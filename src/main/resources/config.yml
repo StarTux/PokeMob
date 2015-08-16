@@ -1,0 +1,9 @@
+TotalWeight: 100
+CatchBlacklist: []
+ReleaseBlacklist: []
+EntityChance:
+  default: 1.0
+EntityWeight:
+  default: 10
+EntityMaxHealth:
+  default: 100
