@@ -47,6 +47,11 @@ import org.bukkit.material.Diode;
 import org.bukkit.material.Lever;
 import org.bukkit.material.MaterialData;
 
+import net.minecraft.server.v1_8_R3.AttributeInstance;
+import net.minecraft.server.v1_8_R3.EntityInsentient;
+import net.minecraft.server.v1_8_R3.GenericAttributes;
+import org.bukkit.craftbukkit.v1_8_R3.entity.CraftLivingEntity;
+
 public class Util {
     private static Random rnd = new Random(System.currentTimeMillis());
 
@@ -195,6 +200,12 @@ public class Util {
                 horseJumpStrength = horseJumpStrength.substring(0, 4);
             }
             setValue(lore, "Jump Strength", horseJumpStrength);
+            try {
+                Double speed = getHorseSpeed(horse);
+                if (speed != null) setValue(lore, "Speed", String.format("%.2f", speed));
+            } catch (Throwable t) {
+                t.printStackTrace();
+            }
             if (horse.isCarryingChest()) {
                 setValue(lore, "Carries Chest", "True");
             }
@@ -464,6 +475,16 @@ public class Util {
                     horse.setJumpStrength(jumpStrength);
                 } catch (NumberFormatException nfe) {}
             }
+            try {
+                String horseSpeed = getValue(lore, "Speed");
+                if (horseSpeed != null) {
+                    double speed = Double.parseDouble(horseSpeed);
+                    setHorseSpeed(horse, speed);
+                }
+            } catch (NumberFormatException nfe) {
+            } catch (Throwable t) {
+                t.printStackTrace();
+            }
             String horseCarriesChest = getValue(lore, "Carries Chest");
             if (horseCarriesChest != null && horseCarriesChest.equalsIgnoreCase("true")) {
                 horse.setCarryingChest(true);
@@ -707,5 +728,15 @@ public class Util {
         default:
             return true;
         }
+    }
+
+    static Double getHorseSpeed(Horse h){
+        AttributeInstance attributes = ((EntityInsentient)((CraftLivingEntity)h).getHandle()).getAttributeInstance(GenericAttributes.MOVEMENT_SPEED);
+        return attributes.getValue();
+    }
+
+    static void setHorseSpeed(Horse h,double speed){
+        AttributeInstance attributes = ((EntityInsentient)((CraftLivingEntity)h).getHandle()).getAttributeInstance(GenericAttributes.MOVEMENT_SPEED);
+        attributes.setValue(speed);
     }
 }
