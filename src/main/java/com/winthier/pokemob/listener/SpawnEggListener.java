@@ -41,6 +41,10 @@ public class SpawnEggListener implements Listener {
         switch (event.getAction()) {
         case LEFT_CLICK_AIR: case LEFT_CLICK_BLOCK: return;
         }
+        if (event.getPlayer().getInventory().getItemInOffHand().getType() == Material.MONSTER_EGG) {
+            event.setCancelled(true);
+            return;
+        }
         if (event.getItem() == null || event.getItem().getType() != Material.MONSTER_EGG) return;
         if (!event.getPlayer().isSneaking() && Util.canUseBlock(event.getClickedBlock())) return;
         event.setCancelled(true);
@@ -112,7 +116,11 @@ public class SpawnEggListener implements Listener {
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void onPlayerInteractEntity(PlayerInteractEntityEvent event) {
-        if (event.getPlayer().getItemInHand().getType() != Material.MONSTER_EGG) return;
+        if (event.getPlayer().getInventory().getItemInOffHand().getType() == Material.MONSTER_EGG) {
+            event.setCancelled(true);
+            return;
+        }
+        if (event.getPlayer().getInventory().getItemInMainHand().getType() != Material.MONSTER_EGG) return;
         if (event.getRightClicked().getType() == EntityType.ITEM_FRAME) return;
         event.setCancelled(true);
     }
