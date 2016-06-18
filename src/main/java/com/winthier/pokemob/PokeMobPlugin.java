@@ -14,7 +14,7 @@ public class PokeMobPlugin extends JavaPlugin {
         @Override
         public void onEnable() {
                 this.instance = this;
-                // new PotionListener(this).onEnable();
+                new PotionListener(this).onEnable();
                 new SpawnEggListener(this).onEnable();
                 new EntityListener(this).onEnable();
                 config.onEnable();

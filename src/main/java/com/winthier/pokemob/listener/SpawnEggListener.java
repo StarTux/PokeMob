@@ -1,5 +1,6 @@
 package com.winthier.pokemob.listener;
 
+import com.winthier.pokemob.Dirty;
 import com.winthier.pokemob.PokeMobPlugin;
 import com.winthier.pokemob.Util;
 import org.bukkit.GameMode;
@@ -41,17 +42,13 @@ public class SpawnEggListener implements Listener {
         switch (event.getAction()) {
         case LEFT_CLICK_AIR: case LEFT_CLICK_BLOCK: return;
         }
-        if (event.getPlayer().getInventory().getItemInOffHand().getType() == Material.MONSTER_EGG) {
-            event.setCancelled(true);
-            return;
-        }
         if (event.getItem() == null || event.getItem().getType() != Material.MONSTER_EGG) return;
         if (!event.getPlayer().isSneaking() && Util.canUseBlock(event.getClickedBlock())) return;
         event.setCancelled(true);
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
         Player player = event.getPlayer();
         Location loc = event.getClickedBlock().getRelative(event.getBlockFace()).getLocation().add(0.5, 0.0, 0.5);
-        EntityType et = EntityType.fromId(event.getItem().getDurability());
+        EntityType et = Dirty.getSpawnEggType(event.getItem());
         if (et == null || et.getEntityClass() == null) {
             plugin.getLogger().warning(String.format("Player %s tried to release %s (%d) from spawn egg at %s,%d,%d,%d, but entity cannot be spawned!", player.getName(), (et != null ? Util.enumToHuman(et.name()) : "null"), event.getItem().getDurability(), loc.getWorld().getName(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ()));
             return;
@@ -73,9 +70,27 @@ public class SpawnEggListener implements Listener {
             if (tameable.isTamed()) tameable.setOwner(player);
         }
         if (player.getGameMode() != GameMode.CREATIVE) {
-            ItemStack item = event.getPlayer().getItemInHand();
-            item.setAmount(item.getAmount() - 1);
-            event.getPlayer().setItemInHand(item);
+            ItemStack item;
+            switch (event.getHand()) {
+            case HAND:
+                item = event.getPlayer().getInventory().getItemInMainHand();
+                if (item.getAmount() > 1) {
+                    item.setAmount(item.getAmount() - 1);
+                    event.getPlayer().getInventory().setItemInMainHand(item);
+                } else {
+                    event.getPlayer().getInventory().setItemInMainHand(null);
+                }
+                break;
+            case OFF_HAND:
+                item = event.getPlayer().getInventory().getItemInOffHand();
+                if (item.getAmount() > 1) {
+                    item.setAmount(item.getAmount() - 1);
+                    event.getPlayer().getInventory().setItemInOffHand(item);
+                } else {
+                    event.getPlayer().getInventory().setItemInOffHand(null);
+                }
+                break;
+            }
         }
         return;
     }

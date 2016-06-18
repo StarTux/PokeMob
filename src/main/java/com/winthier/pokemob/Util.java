@@ -47,11 +47,6 @@ import org.bukkit.material.Diode;
 import org.bukkit.material.Lever;
 import org.bukkit.material.MaterialData;
 
-import net.minecraft.server.v1_9_R1.AttributeInstance;
-import net.minecraft.server.v1_9_R1.EntityInsentient;
-import net.minecraft.server.v1_9_R1.GenericAttributes;
-import org.bukkit.craftbukkit.v1_9_R1.entity.CraftLivingEntity;
-
 public class Util {
     private static Random rnd = new Random(System.currentTimeMillis());
 
@@ -86,8 +81,7 @@ public class Util {
     }
 
     public static ItemStack getMonsterEgg(Entity e) {
-        ItemStack result = new ItemStack(Material.MONSTER_EGG, 1, e.getType().getTypeId());
-        return result;
+        return Dirty.spawnEggOf(e.getType());
     }
 
     /**
@@ -201,7 +195,7 @@ public class Util {
             }
             setValue(lore, "Jump Strength", horseJumpStrength);
             try {
-                Double speed = getHorseSpeed(horse);
+                Double speed = Dirty.getHorseSpeed(horse);
                 if (speed != null) setValue(lore, "Speed", String.format("%.2f", speed));
             } catch (Throwable t) {
                 t.printStackTrace();
@@ -479,7 +473,7 @@ public class Util {
                 String horseSpeed = getValue(lore, "Speed");
                 if (horseSpeed != null) {
                     double speed = Double.parseDouble(horseSpeed);
-                    setHorseSpeed(horse, speed);
+                    Dirty.setHorseSpeed(horse, speed);
                 }
             } catch (NumberFormatException nfe) {
             } catch (Throwable t) {
@@ -710,7 +704,7 @@ public class Util {
 
     public static boolean canEggifyEntity(int id) {
         if (id == 120) return true;
-        if (id < 50 || id > 101) return false;
+        if (id < 50 || id > 102) return false;
         if (id > 68 && id < 90) return false;
         return true;
     }
@@ -728,15 +722,5 @@ public class Util {
         default:
             return true;
         }
-    }
-
-    static Double getHorseSpeed(Horse h){
-        AttributeInstance attributes = ((EntityInsentient)((CraftLivingEntity)h).getHandle()).getAttributeInstance(GenericAttributes.MOVEMENT_SPEED);
-        return attributes.getValue();
-    }
-
-    static void setHorseSpeed(Horse h,double speed){
-        AttributeInstance attributes = ((EntityInsentient)((CraftLivingEntity)h).getHandle()).getAttributeInstance(GenericAttributes.MOVEMENT_SPEED);
-        attributes.setValue(speed);
     }
 }
