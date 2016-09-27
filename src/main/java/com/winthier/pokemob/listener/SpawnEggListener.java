@@ -101,7 +101,7 @@ public class SpawnEggListener implements Listener {
         if (event.getBlock().getType() != Material.DISPENSER) return;
         event.setCancelled(true);
         Location loc = event.getBlock().getLocation();
-        EntityType et = EntityType.fromId(event.getItem().getDurability());
+        EntityType et = Dirty.getSpawnEggType(event.getItem());
         if (et == null || et.getEntityClass() == null || !plugin.config.canRelease(et)) {
             plugin.getLogger().warning(String.format("%s (%d) was dispensed from spawn egg at %s,%d,%d,%d without permission!", (et != null ? Util.enumToHuman(et.name()) : "null"), event.getItem().getDurability(), loc.getWorld().getName(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ()));
             return;
