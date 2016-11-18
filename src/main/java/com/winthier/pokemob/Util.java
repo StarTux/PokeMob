@@ -26,6 +26,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Horse;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Llama;
 import org.bukkit.entity.Ocelot;
 import org.bukkit.entity.Pig;
 import org.bukkit.entity.Player;
@@ -62,7 +63,7 @@ public class Util {
         for (ItemStack drop : drops) e.getWorld().dropItemNaturally(loc, drop);
         e.getWorld().playEffect(loc, Effect.ZOMBIE_CHEW_IRON_DOOR, 0);
         e.getEquipment().clear();
-        if (e instanceof Horse) ((Horse)e).getInventory().clear();
+        if (e instanceof AbstractHorse) ((AbstractHorse)e).getInventory().clear();
         e.remove();
     }
 
@@ -209,6 +210,10 @@ public class Util {
             if (horse.isCarryingChest()) {
                 setValue(lore, "Carries Chest", "True");
             }
+        }
+        if (e instanceof Llama) {
+            Llama llama = (Llama)e; // llama llama ding dong
+            setValue(lore, "Llama Color", enumToHuman(llama.getColor().name()));
         }
         if (e instanceof Zombie) {
             Zombie zombie = (Zombie)e;
@@ -515,6 +520,16 @@ public class Util {
                 horse.setCarryingChest(true);
             } else {
                 horse.setCarryingChest(false);
+            }
+        }
+        if (e instanceof Llama) {
+            Llama llama = (Llama)e; // llama llama ding dong
+            String llamaColor = getValue(lore, "Llama Color");
+            if (llamaColor != null) {
+                try {
+                    Llama.Color color = Llama.Color.valueOf(humanToEnum(llamaColor));
+                    llama.setColor(color);
+                } catch (IllegalArgumentException ase) {}
             }
         }
         if (e instanceof Zombie) {
