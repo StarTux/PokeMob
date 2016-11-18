@@ -1,5 +1,6 @@
 package com.winthier.pokemob;
 
+import com.winthier.pokemob.listener.BrewerListener;
 import com.winthier.pokemob.listener.CommandListener;
 import com.winthier.pokemob.listener.EntityListener;
 import com.winthier.pokemob.listener.PotionListener;
@@ -21,6 +22,7 @@ public class PokeMobPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new PotionListener(this), this);
         getServer().getPluginManager().registerEvents(new SpawnEggListener(this), this);
         getServer().getPluginManager().registerEvents(new EntityListener(this), this);
+        getServer().getPluginManager().registerEvents(new BrewerListener(this), this);
         getCommand("pokemob").setExecutor(command);
     }
 
