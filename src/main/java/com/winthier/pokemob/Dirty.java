@@ -19,10 +19,20 @@ import org.bukkit.craftbukkit.v1_11_R1.entity.CraftLivingEntity;
 import org.bukkit.craftbukkit.v1_11_R1.inventory.CraftItemStack;
 
 public class Dirty {
+    static String minecraftNameOf(EntityType et) {
+        switch (et) {
+        case VINDICATOR: return "minecraft:vindication_illager";
+        case EVOKER: return "minecraft:evocation_illager";
+        case PIG_ZOMBIE: return "minecraft:zombie_pigman";
+        default:
+            return "minecraft:" + et.name().toLowerCase();
+        }
+    }
+
     public static ItemStack spawnEggOf(EntityType et) {
         ItemStack result = new org.bukkit.inventory.ItemStack(Material.MONSTER_EGG, 1);
+        String name = minecraftNameOf(et);
         try {
-            String name = "minecraft:" + et.name().toLowerCase();
             net.minecraft.server.v1_11_R1.ItemStack item = CraftItemStack.asNMSCopy(result);
             if(!item.hasTag())
                 item.setTag(new NBTTagCompound());
@@ -45,9 +55,12 @@ public class Dirty {
                 item.getTag().set("EntityTag", new NBTTagCompound());
             String name = item.getTag().getCompound("EntityTag").getString("id");
             if (name.startsWith("minecraft:")) {
-                String val = name.substring(10).toUpperCase();
+                String val = name.substring(10);
+                if ("vindication_illager".equals(val)) return EntityType.VINDICATOR;
+                if ("evocation_illager".equals(val)) return EntityType.EVOKER;
+                if ("zombie_pigman".equals(val)) return EntityType.PIG_ZOMBIE;
                 try {
-                    return EntityType.valueOf(val);
+                    return EntityType.valueOf(val.toUpperCase());
                 } catch (IllegalArgumentException iae) {
                     System.err.println("PokeMob: Cannot find EntityType for '" + name + "'");
                 }
