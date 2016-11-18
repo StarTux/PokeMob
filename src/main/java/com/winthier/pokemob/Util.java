@@ -16,7 +16,9 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
+import org.bukkit.entity.AbstractHorse;
 import org.bukkit.entity.Ageable;
+import org.bukkit.entity.ChestedHorse;
 import org.bukkit.entity.Creeper;
 import org.bukkit.entity.Damageable;
 import org.bukkit.entity.Enderman;
@@ -49,11 +51,6 @@ import org.bukkit.material.MaterialData;
 
 public class Util {
     private static Random rnd = new Random(System.currentTimeMillis());
-
-    public static void useSpawnEgg(ItemStack item, LivingEntity e) {
-        loadMetaData(e, item);
-        e.getWorld().playEffect(e.getLocation(), Effect.CLICK2, 0);
-    }
 
     public static void eggify(LivingEntity e) {
         if (!canEggify(e)) return;
@@ -176,14 +173,15 @@ public class Util {
         }
         if (e instanceof Horse) {
             Horse horse = (Horse)e;
-            Horse.Variant variant = horse.getVariant();
-            setValue(lore, "Horse Variant", enumToHuman(variant.name()));
-            if (variant == Horse.Variant.HORSE) {
+            if (e.getType() == EntityType.HORSE) {
                 Horse.Style style = horse.getStyle();
                 setValue(lore, "Horse Style", enumToHuman(style.name()));
                 Horse.Color color = horse.getColor();
                 setValue(lore, "Horse Color", enumToHuman(color.name()));
             }
+        }
+        if (e instanceof AbstractHorse) {
+            AbstractHorse horse = (AbstractHorse)e;
             if (!horse.isTamed()) {
                 int domestication = horse.getDomestication();
                 int maxDomestication = horse.getMaxDomestication();
@@ -200,29 +198,22 @@ public class Util {
             } catch (Throwable t) {
                 t.printStackTrace();
             }
-            if (horse.isCarryingChest()) {
-                setValue(lore, "Carries Chest", "True");
-            }
             for (ItemStack item : horse.getInventory()) {
                 if (item != null) {
                     drops.add(item.clone());
                 }
             }
         }
-        if (e instanceof Skeleton) {
-            Skeleton skelly = (Skeleton)e;
-            SkeletonType st = skelly.getSkeletonType();
-            if (st == SkeletonType.WITHER) {
-                setValue(lore, "Skeleton Type", enumToHuman(st.name()));
+        if (e instanceof ChestedHorse) {
+            ChestedHorse horse = (ChestedHorse)e;
+            if (horse.isCarryingChest()) {
+                setValue(lore, "Carries Chest", "True");
             }
         }
         if (e instanceof Zombie) {
             Zombie zombie = (Zombie)e;
             if (zombie.isBaby()) {
                 setValue(lore, "Age", "Baby");
-            }
-            if (zombie.isVillager()) {
-                setValue(lore, "Zombie Type", "Villager");
             }
         }
         if (e instanceof Creeper) {
@@ -276,28 +267,71 @@ public class Util {
         return result;
     }
 
-    public static void loadMetaData(LivingEntity e, ItemStack stack) {
-        ItemMeta meta = stack.getItemMeta();
-        if (meta == null) return;
-        if (meta.hasDisplayName()) {
-            e.setCustomName(ChatColor.translateAlternateColorCodes('&', meta.getDisplayName()));
-            e.setCustomNameVisible(true);
-            e.setRemoveWhenFarAway(false);
+    public static LivingEntity useSpawnEgg(Location location, EntityType entityType, ItemStack item) {
+        ItemMeta meta = item.getItemMeta();
+        // Build the lore
+        Map<String, String> lore;
+        if (meta == null || !meta.hasLore()) {
+            lore = new HashMap<>();
+        } else {
+            lore = loreToMap(meta.getLore());
+        }
+        // Support legacy spawn eggs
+        if (entityType == EntityType.SKELETON) {
+            String skeletonType = getValue(lore, "Skeleton Type");
+            if (skeletonType == null) {
+                // Do nothing
+            } else if ("Normal".equalsIgnoreCase(skeletonType)) {
+                // Do nothing
+            } else if ("Stray".equalsIgnoreCase(skeletonType)) {
+                entityType = EntityType.STRAY;
+            } else if ("Wither".equalsIgnoreCase(skeletonType)) {
+                entityType = EntityType.WITHER_SKELETON;
+            }
+        } else if (entityType == EntityType.ZOMBIE) {
+            String zombieType = getValue(lore, "Zombie Type");
+            if ("Villager".equalsIgnoreCase(zombieType)) {
+                entityType = EntityType.ZOMBIE_VILLAGER;
+            }
+        } else if (entityType == EntityType.HORSE) {
+            String horseVariant = getValue(lore, "Horse Variant");
+            if (horseVariant == null) {
+            } else if ("Donkey".equalsIgnoreCase(horseVariant)) {
+                entityType = EntityType.DONKEY;
+            } else if ("Horse".equalsIgnoreCase(horseVariant)) {
+            } else if ("Llama".equalsIgnoreCase(horseVariant)) {
+                entityType = EntityType.LLAMA;
+            } else if ("Mule".equalsIgnoreCase(horseVariant)) {
+                entityType = EntityType.MULE;
+            } else if ("Skeleton Horse".equalsIgnoreCase(horseVariant)) {
+                entityType = EntityType.SKELETON_HORSE;
+            } else if ("Undead Horse".equalsIgnoreCase(horseVariant)) {
+                entityType = EntityType.ZOMBIE_HORSE;
+            }
+        }
+        // Spawn the entity
+        Entity e = location.getWorld().spawnEntity(location, entityType);
+        if (e == null || !e.isValid()) return null;
+        if (!(e instanceof LivingEntity)) {
+            e.remove();
+            return null;
+        }
+        LivingEntity living = (LivingEntity)e;
+        // Set the name
+        if (meta != null && meta.hasDisplayName()) {
+            living.setCustomName(ChatColor.translateAlternateColorCodes('&', meta.getDisplayName()));
+            living.setCustomNameVisible(true);
+            living.setRemoveWhenFarAway(false);
             if (e instanceof Ageable) {
                 Ageable ageable = (Ageable)e;
                 ageable.setBreed(false);
             }
         }
-        List<String> lore;
-        if (!meta.hasLore()) {
-            lore = new ArrayList<String>();
-        } else {
-            lore = meta.getLore();
-        }
-        loadMetaData(e, loreToMap(lore));
+        applyLore(living, lore);
+        return living;
     }
 
-    public static void loadMetaData(LivingEntity e, Map<String, String> lore) {
+    public static void applyLore(LivingEntity e, Map<String, String> lore) {
         // tamed wolves have more health than untamed
         // ones. So we handle Tameable first, then reset
         // max health under Damageable.
@@ -425,15 +459,6 @@ public class Util {
         }
         if (e instanceof Horse) {
             Horse horse = (Horse)e;
-            String horseVariant = getValue(lore, "Horse Variant");
-            if (horseVariant != null) {
-                try {
-                    Horse.Variant variant = Horse.Variant.valueOf(humanToEnum(horseVariant));
-                    horse.setVariant(variant);
-                } catch (IllegalArgumentException iae) {}
-            } else {
-                horse.setVariant(Horse.Variant.HORSE);
-            }
             String horseStyle = getValue(lore, "Horse Style");
             if (horseStyle != null) {
                 try {
@@ -450,6 +475,9 @@ public class Util {
                     horse.setColor(color);
                 } catch (IllegalArgumentException iae) {}
             }
+        }
+        if (e instanceof AbstractHorse) {
+            AbstractHorse horse = (AbstractHorse)e;
             String horseDomestication = getValue(lore, "Domestication");
             if (!horse.isTamed() && horseDomestication != null) {
                 String tokens[] = horseDomestication.split("/", 2);
@@ -479,23 +507,14 @@ public class Util {
             } catch (Throwable t) {
                 t.printStackTrace();
             }
+        }
+        if (e instanceof ChestedHorse) {
+            ChestedHorse horse = (ChestedHorse)e;
             String horseCarriesChest = getValue(lore, "Carries Chest");
             if (horseCarriesChest != null && horseCarriesChest.equalsIgnoreCase("true")) {
                 horse.setCarryingChest(true);
             } else {
                 horse.setCarryingChest(false);
-            }
-        }
-        if (e instanceof Skeleton) {
-            Skeleton skelly = (Skeleton)e;
-            String skeletonType = getValue(lore, "Skeleton Type");
-            if (skeletonType != null) {
-                try {
-                    SkeletonType st = SkeletonType.valueOf(humanToEnum(skeletonType));
-                    skelly.setSkeletonType(st);
-                } catch (IllegalArgumentException iae) {}
-            } else {
-                skelly.setSkeletonType(SkeletonType.NORMAL);
             }
         }
         if (e instanceof Zombie) {
@@ -505,12 +524,6 @@ public class Util {
                 zombie.setBaby(true);
             } else {
                 zombie.setBaby(false);
-            }
-            String zt = getValue(lore, "Zombie Type");
-            if (zt != null && zt.equals("Villager")) {
-                zombie.setVillager(true);
-            } else {
-                zombie.setVillager(false);
             }
         }
         if (e instanceof Creeper) {

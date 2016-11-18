@@ -5,33 +5,25 @@ import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.AbstractHorse;
 import org.bukkit.entity.EntityType;
-import org.bukkit.entity.Horse;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
-import net.minecraft.server.v1_10_R1.AttributeInstance;
-import net.minecraft.server.v1_10_R1.DataConverterSpawnEgg;
-import net.minecraft.server.v1_10_R1.EntityInsentient;
-import net.minecraft.server.v1_10_R1.GenericAttributes;
-import net.minecraft.server.v1_10_R1.NBTTagCompound;
-import org.bukkit.craftbukkit.v1_10_R1.entity.CraftLivingEntity;
-import org.bukkit.craftbukkit.v1_10_R1.inventory.CraftItemStack;
+import net.minecraft.server.v1_11_R1.AttributeInstance;
+import net.minecraft.server.v1_11_R1.DataConverterSpawnEgg;
+import net.minecraft.server.v1_11_R1.EntityInsentient;
+import net.minecraft.server.v1_11_R1.GenericAttributes;
+import net.minecraft.server.v1_11_R1.NBTTagCompound;
+import org.bukkit.craftbukkit.v1_11_R1.entity.CraftLivingEntity;
+import org.bukkit.craftbukkit.v1_11_R1.inventory.CraftItemStack;
 
 public class Dirty {
-    public static ItemStack spawnEggOf(int data) {
+    public static ItemStack spawnEggOf(EntityType et) {
         ItemStack result = new org.bukkit.inventory.ItemStack(Material.MONSTER_EGG, 1);
         try {
-
-            // fetch name
-            Field idArray = DataConverterSpawnEgg.class.getDeclaredField("a");
-            idArray.setAccessible(true);
-            String[] ids = (String[]) idArray.get(null);
-            String name = ids[data & 255];
-            if (data == 102 && name == null) name = "PolarBear";
-            if (name == null) return null;
-            
-            net.minecraft.server.v1_10_R1.ItemStack item = CraftItemStack.asNMSCopy(result);
+            String name = "minecraft:" + et.name().toLowerCase();
+            net.minecraft.server.v1_11_R1.ItemStack item = CraftItemStack.asNMSCopy(result);
             if(!item.hasTag())
                 item.setTag(new NBTTagCompound());
             if(!item.getTag().hasKeyOfType("EntityTag", 10))
@@ -44,44 +36,42 @@ public class Dirty {
         return result;
     }
 
-    public static ItemStack spawnEggOf(EntityType et) {
-        return spawnEggOf(et.getTypeId());
-    }
-
-    public static int getSpawnEggData(ItemStack itemStack) {
+    public static EntityType getSpawnEggType(ItemStack itemStack) {
         try {
-            net.minecraft.server.v1_10_R1.ItemStack item = CraftItemStack.asNMSCopy(itemStack);
+            net.minecraft.server.v1_11_R1.ItemStack item = CraftItemStack.asNMSCopy(itemStack);
             if(!item.hasTag())
                 item.setTag(new NBTTagCompound());
             if(!item.getTag().hasKeyOfType("EntityTag", 10))
                 item.getTag().set("EntityTag", new NBTTagCompound());
             String name = item.getTag().getCompound("EntityTag").getString("id");
-
-            if (name.equals("PolarBear")) return 102;
-
-            // fetch name
+            if (name.startsWith("minecraft:")) {
+                String val = name.substring(10).toUpperCase();
+                try {
+                    return EntityType.valueOf(val);
+                } catch (IllegalArgumentException iae) {
+                    System.err.println("PokeMob: Cannot find EntityType for '" + name + "'");
+                }
+            }
+            // Fetch Legacy Name
+            if (name.equals("PolarBear")) return EntityType.POLAR_BEAR;
             Field idArray = DataConverterSpawnEgg.class.getDeclaredField("a");
             idArray.setAccessible(true);
             String[] ids = (String[]) idArray.get(null);
             for (int i = 0; i < ids.length; ++i) {
-                if (ids[i] != null && ids[i].equals(name)) return i;
+                if (ids[i] != null && ids[i].equals(name)) return EntityType.fromId(i);
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return 0;
+        return null;
     }
 
-    public static EntityType getSpawnEggType(ItemStack itemStack) {
-        return EntityType.fromId(getSpawnEggData(itemStack));
-    }
-
-    public static Double getHorseSpeed(Horse h){
+    public static Double getHorseSpeed(AbstractHorse h){
         AttributeInstance attributes = ((EntityInsentient)((CraftLivingEntity)h).getHandle()).getAttributeInstance(GenericAttributes.MOVEMENT_SPEED);
         return attributes.getValue();
     }
 
-    public static void setHorseSpeed(Horse h,double speed){
+    public static void setHorseSpeed(AbstractHorse h, double speed){
         AttributeInstance attributes = ((EntityInsentient)((CraftLivingEntity)h).getHandle()).getAttributeInstance(GenericAttributes.MOVEMENT_SPEED);
         attributes.setValue(speed);
     }

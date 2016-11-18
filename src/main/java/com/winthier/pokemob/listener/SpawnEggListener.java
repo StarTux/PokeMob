@@ -57,14 +57,10 @@ public class SpawnEggListener implements Listener {
             plugin.getLogger().warning(String.format("Player %s tried to release %s (%d) from spawn egg at %s,%d,%d,%d, but lacks permission!", player.getName(), (et != null ? Util.enumToHuman(et.name()) : "null"), event.getItem().getDurability(), loc.getWorld().getName(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ()));
             return;
         }
-        Entity e = loc.getWorld().spawnEntity(loc, et);
-        if (e == null || !e.isValid()) return;
-        if (!(e instanceof LivingEntity)) {
-            e.remove();
-            return;
-        }
+        LivingEntity e = Util.useSpawnEgg(loc, et, event.getItem());
+        if (e == null) return;
+        et = e.getType();
         PokeMobPlugin.instance.getLogger().info(String.format("%s used %s spawn egg in %s at %d,%d,%d.", player.getName(), Util.enumToHuman(et.name()), loc.getWorld().getName(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ()));
-        Util.useSpawnEgg(event.getItem(), (LivingEntity)e);
         if (e instanceof Tameable) {
             Tameable tameable = (Tameable)e;
             if (tameable.isTamed()) tameable.setOwner(player);
@@ -120,13 +116,8 @@ public class SpawnEggListener implements Listener {
             }
         }
         if (!hasItem) return;
-        Entity e = loc.getWorld().spawnEntity(event.getVelocity().toLocation(loc.getWorld()), et);
-        if (e == null || !e.isValid()) return;
-        if (!(e instanceof LivingEntity)) {
-            e.remove();
-            return;
-        }
-        Util.useSpawnEgg(event.getItem(), (LivingEntity)e);
+        Location loc2 = event.getVelocity().toLocation(loc.getWorld());
+        Util.useSpawnEgg(loc2, et, event.getItem());
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
