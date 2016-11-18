@@ -695,7 +695,7 @@ public class Util {
     }
 
     public static void setValue(List<String> lore, String key, String value) {
-        String result = ChatColor.translateAlternateColorCodes('&', "&8" + key + "&8:&7 " + value);
+        String result = ChatColor.translateAlternateColorCodes('&', "&9&o" + key + "&8:&6 " + value);
         String search = key + ":";
         for (int i = 0; i < lore.size(); ++i) {
             String j = ChatColor.stripColor(lore.get(i));

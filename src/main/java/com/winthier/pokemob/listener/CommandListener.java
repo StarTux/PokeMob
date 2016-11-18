@@ -5,13 +5,14 @@ import com.winthier.pokemob.Util;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.bukkit.Material;
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.PotionMeta;
@@ -56,6 +57,8 @@ public class CommandListener implements CommandExecutor {
             ItemStack item = new ItemStack(Material.SPLASH_POTION, 64);
             PotionMeta meta = (PotionMeta)item.getItemMeta();
             meta.setBasePotionData(new PotionData(PotionType.SLOWNESS));
+            meta.setDisplayName("" + ChatColor.BLUE + ChatColor.BOLD + "PokéMob Potion");
+            meta.addItemFlags(ItemFlag.HIDE_POTION_EFFECTS);
             item.setItemMeta(meta);
             player.getWorld().dropItem(player.getEyeLocation(), item).setPickupDelay(0);
         } else if (args.length == 3 && args[0].equals("mod")) {
