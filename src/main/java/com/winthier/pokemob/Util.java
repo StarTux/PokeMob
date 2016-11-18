@@ -11,7 +11,6 @@ import java.util.Map;
 import java.util.Random;
 import org.bukkit.ChatColor;
 import org.bukkit.DyeColor;
-import org.bukkit.Effect;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -61,21 +60,19 @@ public class Util {
         Location loc = e.getLocation();
         e.getWorld().dropItemNaturally(loc, stack);
         for (ItemStack drop : drops) e.getWorld().dropItemNaturally(loc, drop);
-        e.getWorld().playEffect(loc, Effect.ZOMBIE_CHEW_IRON_DOOR, 0);
         e.getEquipment().clear();
         if (e instanceof AbstractHorse) ((AbstractHorse)e).getInventory().clear();
         e.remove();
     }
 
     public static boolean isPokeMob(LivingEntity e) {
+        if (!e.isCustomNameVisible()) return false;
         String customName = e.getCustomName();
-        return customName != null && customName.charAt(0) == ChatColor.COLOR_CHAR && e.isCustomNameVisible();
-    }
-
-    public static void eggifyFail(LivingEntity e) {
-        Location loc = e.getLocation().add(0.0, e.getEyeHeight(), 0.0);
-        e.getWorld().playEffect(loc, Effect.EXTINGUISH, 0);
-        e.getWorld().playEffect(loc, Effect.SMOKE, 0);
+        if (customName == null) return false;
+        if (ChatColor.stripColor(customName).isEmpty()) return false;
+        if (customName.charAt(0) != ChatColor.COLOR_CHAR) return false;
+        if (customName.charAt(0) == ChatColor.RESET.getChar()) return false;
+        return true;
     }
 
     public static ItemStack getMonsterEgg(Entity e) {

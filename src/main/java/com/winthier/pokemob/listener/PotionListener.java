@@ -3,8 +3,11 @@ package com.winthier.pokemob.listener;
 import com.winthier.pokemob.PokeMobPlugin;
 import com.winthier.pokemob.Util;
 import java.util.Random;
+import lombok.RequiredArgsConstructor;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
+import org.bukkit.Particle;
+import org.bukkit.Sound;
 import org.bukkit.entity.AnimalTamer;
 import org.bukkit.entity.Creature;
 import org.bukkit.entity.LivingEntity;
@@ -12,6 +15,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.entity.Snowball;
 import org.bukkit.entity.Tameable;
+import org.bukkit.entity.ThrownPotion;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -21,84 +25,74 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
 
+@RequiredArgsConstructor
 public class PotionListener implements Listener {
-    private final PokeMobPlugin plugin;
-    private final Random random = new Random(System.currentTimeMillis());
+    final PokeMobPlugin plugin;
+    final Random random = new Random(System.currentTimeMillis());
 
-    public PotionListener(PokeMobPlugin plugin) {
-        this.plugin = plugin;
-    }
-
-    public void onEnable() {
-        plugin.getServer().getPluginManager().registerEvents(this, plugin);
+    static boolean potionHasSlowness(ThrownPotion potion) {
+        for (PotionEffect effect : potion.getEffects()) {
+            if (effect.getType().equals(PotionEffectType.SLOW)) return true;
+        }
+        return false;
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void onPotionSplash(PotionSplashEvent event) {
+        if (!potionHasSlowness(event.getPotion())) return;
         Player player = null;
         if (event.getPotion().getShooter() instanceof Player) {
             player = (Player)event.getPotion().getShooter();
         }
-        if (event.getPotion().getShooter() != null && player == null) return;
-        for (PotionEffect effect : event.getPotion().getEffects()) {
-            if (effect.getType().equals(PotionEffectType.SLOW)) {
-                int weight = plugin.config.totalWeight();
-            entityLoop:
-                for (LivingEntity e : event.getAffectedEntities()) {
-                    if (plugin.config.canEggify(e)) {
-                        // creative override
-                        if (player != null && player.getGameMode() == GameMode.CREATIVE) {
-                            Util.eggify(e);
-                            continue entityLoop;
-                        }
-                        weight -= plugin.config.entityWeight(e);
-                        if (weight < 0) break entityLoop;
-                        if (e.getPassenger() != null) continue entityLoop;
-                        if (e instanceof Tameable) {
-                            Tameable tameable = (Tameable)e;
-                            if (tameable.isTamed()) {
-                                AnimalTamer owner = tameable.getOwner();
-                                if (player == null || (owner != null && !owner.getName().equals(player.getName()))) {
-                                    continue entityLoop;
-                                }
-                            }
-                        }
-                        double chance = plugin.config.eggifyChance(e) * event.getIntensity(e);
-                        if (Util.isPokeMob(e) || (plugin.config.checkMaxHealth(e) && random.nextDouble() < chance)) {
-                            EntityDamageByEntityEvent edbee = new EntityDamageByEntityEvent(event.getPotion(), e, EntityDamageByEntityEvent.DamageCause.CUSTOM, 0.0);
-                            plugin.getServer().getPluginManager().callEvent(edbee);
-                            if (!edbee.isCancelled()) {
-                                event.setIntensity(e, 0.0);
-                                Util.eggify(e);
-                            }
-                        } else {
-                            Util.eggifyFail(e);
-                        }
-                    }
-                }
-            } else if (effect.getType().equals(PotionEffectType.NIGHT_VISION)) {
-            entityLoop:
-                for (LivingEntity e : event.getAffectedEntities()) {
-                    if (!(e instanceof Creature)) continue entityLoop;
-                targetLoop:
-                    for (LivingEntity f : event.getAffectedEntities()) {
-                        //if (!(f instanceof Creature)) continue entityLoop;
-                        if (e != f) {
-                            //((Creature)e).setTarget(f);
-                            //break targetLoop;
-                            Projectile p = e.launchProjectile(Snowball.class);
-                            Location l1 = p.getLocation();
-                            Location l2 = f.getLocation();
-                            Vector v = new Vector(l2.getX() - l1.getX(),
-                                                  l2.getY() - l1.getY(),
-                                                  l2.getZ() - l1.getZ());
-                            v = v.normalize();
-                            p.setVelocity(v);
-                            p.setShooter(e);
-                        }
-                    }
+        if (player == null && event.getPotion().getShooter() != null) return;
+        int weight = plugin.getConfiguration().getTotalWeight();
+        for (LivingEntity entity : event.getAffectedEntities()) {
+            if (!Util.canEggify(entity)) continue;
+            // Creative override
+            if (player != null && player.getGameMode() == GameMode.CREATIVE) {
+                Util.eggify(entity);
+                event.setIntensity(entity, 0.0);
+                continue;
+            }
+            if (!plugin.getConfiguration().canEggify(entity)) continue;
+            // Test event
+            EntityDamageByEntityEvent edbee = new EntityDamageByEntityEvent(event.getPotion(), entity, EntityDamageByEntityEvent.DamageCause.CUSTOM, 0.0);
+            plugin.getServer().getPluginManager().callEvent(edbee);
+            if (edbee.isCancelled()) continue;
+            Location loc = entity.getEyeLocation();
+            boolean success = hitEntity(entity, player);
+            if (success) {
+                loc.getWorld().playSound(loc, Sound.ENTITY_ZOMBIE_ATTACK_IRON_DOOR, 1.0f, 1.0f);
+                loc.getWorld().spawnParticle(Particle.CRIT, loc, 64, 0.5, 0.5, 0.5, 0.5);
+                event.setIntensity(entity, 0.0);
+                weight -= plugin.getConfiguration().getEntityWeight(entity);
+                if (weight <= 0) break;
+            } else {
+                loc.getWorld().playSound(loc, Sound.BLOCK_FIRE_EXTINGUISH, 1.0f, 1.0f);
+                loc.getWorld().spawnParticle(Particle.SMOKE_NORMAL, loc, 24, 0.2, 0.2, 0.2, 0.01);
+            }
+        }
+    }
+
+    boolean hitEntity(LivingEntity entity, Player player) {
+        // Check ownership
+        if (entity instanceof Tameable) {
+            Tameable tameable = (Tameable)entity;
+            if (tameable.isTamed()) {
+                AnimalTamer owner = tameable.getOwner();
+                if (player == null || (owner != null && !owner.getUniqueId().equals(player.getUniqueId()))) {
+                    return false;
                 }
             }
         }
+        // Roll dice unless has colorful name
+        if (!Util.isPokeMob(entity)) {
+            double chance = plugin.getConfiguration().getEggifyChance(entity);
+            if (!plugin.getConfiguration().checkMaxHealth(entity)) return false;
+            if (random.nextDouble() > chance) return false;
+        }
+        // We win
+        Util.eggify(entity);
+        return true;
     }
 }

@@ -1,9 +1,15 @@
 TotalWeight: 100
 CatchBlacklist: []
-ReleaseBlacklist: []
+ReleaseBlacklist: [ Ender_Dragon, Wither ]
 EntityChance:
-  default: 1.0
+  default: 0.1
+  animal: 0.75
+  monster: 0.25
 EntityWeight:
-  default: 10
-EntityMaxHealth:
   default: 100
+  monster: 100
+  animal: 1
+EntityMaxHealth:
+  default: 0
+  monster: 10
+  animal: 100

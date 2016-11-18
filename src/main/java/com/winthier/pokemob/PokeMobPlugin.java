@@ -4,24 +4,36 @@ import com.winthier.pokemob.listener.CommandListener;
 import com.winthier.pokemob.listener.EntityListener;
 import com.winthier.pokemob.listener.PotionListener;
 import com.winthier.pokemob.listener.SpawnEggListener;
+import lombok.Getter;
 import org.bukkit.plugin.java.JavaPlugin;
 
+@Getter
 public class PokeMobPlugin extends JavaPlugin {
-        public final Configuration config = new Configuration(this);
-        public final CommandListener command = new CommandListener(this);
-        public static PokeMobPlugin instance;
+    private Configuration configuration;
+    public final CommandListener command = new CommandListener(this);
+    @Getter static PokeMobPlugin instance;
 
-        @Override
-        public void onEnable() {
-                this.instance = this;
-                new PotionListener(this).onEnable();
-                new SpawnEggListener(this).onEnable();
-                new EntityListener(this).onEnable();
-                config.onEnable();
-                command.onEnable();
-        }
+    @Override
+    public void onEnable() {
+        this.instance = this;
+        saveDefaultConfig();
+        reloadConfig();
+        getServer().getPluginManager().registerEvents(new PotionListener(this), this);
+        getServer().getPluginManager().registerEvents(new SpawnEggListener(this), this);
+        getServer().getPluginManager().registerEvents(new EntityListener(this), this);
+        getCommand("pokemob").setExecutor(command);
+    }
 
-        @Override
-        public void onDisable() {
+    public Configuration getConfiguration() {
+        if (configuration == null) {
+            configuration = new Configuration(this);
+            configuration.load();
         }
+        return configuration;
+    }
+
+    public void reload() {
+        configuration = null;
+        reloadConfig();
+    }
 }

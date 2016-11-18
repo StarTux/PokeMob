@@ -25,17 +25,11 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
+import lombok.RequiredArgsConstructor;
 
+@RequiredArgsConstructor
 public class SpawnEggListener implements Listener {
-    private final PokeMobPlugin plugin;
-
-    public SpawnEggListener(PokeMobPlugin plugin) {
-        this.plugin = plugin;
-    }
-
-    public void onEnable() {
-        plugin.getServer().getPluginManager().registerEvents(this, plugin);
-    }
+    final PokeMobPlugin plugin;
 
     @EventHandler(ignoreCancelled = false, priority = EventPriority.LOWEST)
     public void onPlayerInteract(PlayerInteractEvent event) {
@@ -50,17 +44,17 @@ public class SpawnEggListener implements Listener {
         Location loc = event.getClickedBlock().getRelative(event.getBlockFace()).getLocation().add(0.5, 0.0, 0.5);
         EntityType et = Dirty.getSpawnEggType(event.getItem());
         if (et == null || et.getEntityClass() == null) {
-            plugin.getLogger().warning(String.format("Player %s tried to release %s (%d) from spawn egg at %s,%d,%d,%d, but entity cannot be spawned!", player.getName(), (et != null ? Util.enumToHuman(et.name()) : "null"), event.getItem().getDurability(), loc.getWorld().getName(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ()));
+            plugin.getLogger().warning(String.format("Player %s tried to release %s from spawn egg at %s,%d,%d,%d, but entity cannot be spawned!", player.getName(), (et != null ? Util.enumToHuman(et.name()) : "null"), loc.getWorld().getName(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ()));
             return;
         }
-        if (!plugin.config.canRelease(et)) {
-            plugin.getLogger().warning(String.format("Player %s tried to release %s (%d) from spawn egg at %s,%d,%d,%d, but lacks permission!", player.getName(), (et != null ? Util.enumToHuman(et.name()) : "null"), event.getItem().getDurability(), loc.getWorld().getName(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ()));
+        if (!plugin.getConfiguration().canRelease(et)) {
+            plugin.getLogger().warning(String.format("Player %s tried to release %s from spawn egg at %s,%d,%d,%d, but lacks permission!", player.getName(), (et != null ? Util.enumToHuman(et.name()) : "null"), loc.getWorld().getName(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ()));
             return;
         }
         LivingEntity e = Util.useSpawnEgg(loc, et, event.getItem());
         if (e == null) return;
         et = e.getType();
-        PokeMobPlugin.instance.getLogger().info(String.format("%s used %s spawn egg in %s at %d,%d,%d.", player.getName(), Util.enumToHuman(et.name()), loc.getWorld().getName(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ()));
+        PokeMobPlugin.getInstance().getLogger().info(String.format("%s used %s spawn egg in %s at %d,%d,%d.", player.getName(), Util.enumToHuman(et.name()), loc.getWorld().getName(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ()));
         if (e instanceof Tameable) {
             Tameable tameable = (Tameable)e;
             if (tameable.isTamed()) tameable.setOwner(player);
@@ -98,8 +92,8 @@ public class SpawnEggListener implements Listener {
         event.setCancelled(true);
         Location loc = event.getBlock().getLocation();
         EntityType et = Dirty.getSpawnEggType(event.getItem());
-        if (et == null || et.getEntityClass() == null || !plugin.config.canRelease(et)) {
-            plugin.getLogger().warning(String.format("%s (%d) was dispensed from spawn egg at %s,%d,%d,%d without permission!", (et != null ? Util.enumToHuman(et.name()) : "null"), event.getItem().getDurability(), loc.getWorld().getName(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ()));
+        if (et == null || et.getEntityClass() == null || !plugin.getConfiguration().canRelease(et)) {
+            plugin.getLogger().warning(String.format("%s was dispensed from spawn egg at %s,%d,%d,%d without permission!", (et != null ? Util.enumToHuman(et.name()) : "null"), loc.getWorld().getName(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ()));
             return;
         }
         ItemStack item = event.getItem();
