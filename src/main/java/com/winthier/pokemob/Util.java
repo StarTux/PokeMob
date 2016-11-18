@@ -695,32 +695,12 @@ public class Util {
     }
 
     public static boolean canEggify(Entity e) {
-        return canEggifyEntity(e.getType().getTypeId());
+        return canEggify(e.getType());
     }
 
-    public static boolean canEggify(EntityType e) {
-        return canEggifyEntity(e.getTypeId());
-    }
-
-    public static boolean canEggifyEntity(int id) {
-        if (id == 120) return true;
-        if (id < 50 || id > 102) return false;
-        if (id > 68 && id < 90) return false;
+    public static boolean canEggify(EntityType et) {
+        if (et == EntityType.PLAYER) return false;
+        if (!et.isAlive()) return false;
         return true;
-    }
-
-    public static boolean canBeVanillaSpawnEgg(int id) {
-        if (id == 120) return true;
-        if (id < 50 || id > 98) return false;
-        if (id > 68 && id < 90) return false;
-        switch (id) {
-        case 53:
-        case 63:
-        case 64:
-        case 97:
-            return false;
-        default:
-            return true;
-        }
     }
 }
