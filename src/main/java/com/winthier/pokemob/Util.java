@@ -2,7 +2,7 @@ package com.winthier.pokemob;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -50,19 +50,91 @@ import org.bukkit.material.Lever;
 import org.bukkit.material.MaterialData;
 
 public class Util {
-    private static Random rnd = new Random(System.currentTimeMillis());
-
     public static void eggify(LivingEntity e) {
         if (!canEggify(e)) return;
-        ItemStack stack = getMonsterEgg(e);
+        ItemStack stack = Dirty.eggify(e);
         if (stack == null) return;
-        Collection<ItemStack> drops = saveMetaData(e, stack);
+        saveLore(e, stack);
         Location loc = e.getLocation();
         e.getWorld().dropItemNaturally(loc, stack);
-        for (ItemStack drop : drops) e.getWorld().dropItemNaturally(loc, drop);
         e.getEquipment().clear();
         if (e instanceof AbstractHorse) ((AbstractHorse)e).getInventory().clear();
         e.remove();
+    }
+
+    public static LivingEntity useSpawnEgg(Location location, EntityType entityType, ItemStack item) {
+        ItemMeta meta = item.getItemMeta();
+        // Spawn the entity
+        String dataTag = Dirty.getSpawnEggDataTag(item);
+        Entity e;
+        if (dataTag != null) {
+            e = PokeMobPlugin.getInstance().summon(entityType, location, dataTag);
+            if (e == null) {
+                PokeMobPlugin.getInstance().getLogger().warning(String.format("Failed spawning %s with data tag: %s", entityType.getName(), dataTag));
+            }
+        } else { // Legacy
+            // Build the lore
+            Map<String, String> lore;
+            if (meta == null || !meta.hasLore()) {
+                lore = new HashMap<>();
+            } else {
+                lore = loreToMap(meta.getLore());
+            }
+            // Support legacy spawn eggs
+            if (entityType == EntityType.SKELETON) {
+                String skeletonType = getValue(lore, "Skeleton Type");
+                if (skeletonType == null) {
+                    // Do nothing
+                } else if ("Normal".equalsIgnoreCase(skeletonType)) {
+                    // Do nothing
+                } else if ("Stray".equalsIgnoreCase(skeletonType)) {
+                    entityType = EntityType.STRAY;
+                } else if ("Wither".equalsIgnoreCase(skeletonType)) {
+                    entityType = EntityType.WITHER_SKELETON;
+                }
+            } else if (entityType == EntityType.ZOMBIE) {
+                String zombieType = getValue(lore, "Zombie Type");
+                if ("Villager".equalsIgnoreCase(zombieType)) {
+                    entityType = EntityType.ZOMBIE_VILLAGER;
+                }
+            } else if (entityType == EntityType.HORSE) {
+                String horseVariant = getValue(lore, "Horse Variant");
+                if (horseVariant == null) {
+                } else if ("Donkey".equalsIgnoreCase(horseVariant)) {
+                    entityType = EntityType.DONKEY;
+                } else if ("Horse".equalsIgnoreCase(horseVariant)) {
+                } else if ("Llama".equalsIgnoreCase(horseVariant)) {
+                    entityType = EntityType.LLAMA;
+                } else if ("Mule".equalsIgnoreCase(horseVariant)) {
+                    entityType = EntityType.MULE;
+                } else if ("Skeleton Horse".equalsIgnoreCase(horseVariant)) {
+                    entityType = EntityType.SKELETON_HORSE;
+                } else if ("Undead Horse".equalsIgnoreCase(horseVariant)) {
+                    entityType = EntityType.ZOMBIE_HORSE;
+                }
+            }
+            e = PokeMobPlugin.getInstance().summon(entityType, location, "");
+            if (e instanceof Ageable) {
+                Ageable ageable = (Ageable)e;
+                ageable.setBreed(false);
+            }
+            if (e != null && e instanceof LivingEntity) {
+                applyLore((LivingEntity)e, lore);
+            }
+        }
+        if (e == null || !e.isValid()) return null;
+        if (!(e instanceof LivingEntity)) {
+            e.remove();
+            return null;
+        }
+        LivingEntity living = (LivingEntity)e;
+        // Set the name
+        if (meta != null && meta.hasDisplayName()) {
+            living.setCustomName(ChatColor.translateAlternateColorCodes('&', meta.getDisplayName()));
+            living.setCustomNameVisible(true);
+            living.setRemoveWhenFarAway(false);
+        }
+        return living;
     }
 
     public static boolean isPokeMob(LivingEntity e) {
@@ -75,14 +147,14 @@ public class Util {
         return true;
     }
 
-    public static ItemStack getMonsterEgg(Entity e) {
+    static ItemStack getMonsterEgg(Entity e) {
         return Dirty.spawnEggOf(e.getType());
     }
 
     /**
      * @return A collection of dropped items or null
      */
-    public static Collection<ItemStack> saveMetaData(LivingEntity e, ItemStack stack) {
+    static void saveLore(LivingEntity e, ItemStack stack) {
         ItemMeta meta = stack.getItemMeta();
         {
             String name = e.getCustomName();
@@ -97,242 +169,230 @@ public class Util {
             lore = meta.getLore();
         }
         Map<String, String> data = new LinkedHashMap<String, String>();
-        Collection<ItemStack> drops = saveMetaData(e, data);
+        saveLore(e, data);
         for (String key : data.keySet()) {
             setValue(lore, key, data.get(key));
         }
+        Collections.sort(lore);
         meta.setLore(lore);
         stack.setItemMeta(meta);
-        return drops;
     }
 
     /**
      * @return drops
      */
-    public static Collection<ItemStack> saveMetaData(LivingEntity e, Map<String, String> lore) {
-        Collection<ItemStack> drops = new ArrayList<ItemStack>(5);
+    static void saveLore(LivingEntity e, Map<String, String> lore) {
         if (e instanceof Damageable) {
             Damageable damageable = (Damageable)e;
             int health = (int)damageable.getHealth();
             int maxHealth = (int)damageable.getMaxHealth();
-            // damageable.resetMaxHealth();
-            // if (maxHealth != damageable.getMaxHealth()) {
-            // } else if (health != maxHealth) {
-            //         setValue(lore, "Health", "" + health);
-            // }
-            // damageable.setMaxHealth(maxHealth);
-            // damageable.setHealth(health);
-            setValue(lore, "Health", "" + health + "/" + maxHealth);
+            if (health != maxHealth) {
+                lore.put("Health", "" + health + "/" + maxHealth);
+            } else if (e instanceof AbstractHorse) {
+                lore.put("Health", "" + health);
+            }
         }
         if (e instanceof Ageable) {
             Ageable ageable = (Ageable)e;
             if (!ageable.isAdult()) {
-                setValue(lore, "Age", "Baby");
+                lore.put("Age", "Baby");
             }
         }
         if (e instanceof Tameable) {
             Tameable tameable = (Tameable)e;
             if (tameable.isTamed()) {
-                setValue(lore, "Tamed", "True");
+                lore.put("Tamed", "True");
             }
         }
         if (e instanceof Colorable) {
             Colorable colorable = (Colorable)e;
-            setValue(lore, "Color", enumToHuman(colorable.getColor().name()));
+            lore.put("Color", enumToHuman(colorable.getColor().name()));
         }
         if (e instanceof Sheep) {
             Sheep sheep = (Sheep)e;
             if (sheep.isSheared()) {
-                setValue(lore, "Sheared", "True");
+                lore.put("Sheared", "True");
             }
         }
         if (e instanceof Pig) {
             Pig pig = (Pig)e;
             if (pig.hasSaddle()) {
-                setValue(lore, "Saddled", "True");
+                lore.put("Saddled", "True");
             }
         }
         if (e instanceof Ocelot) {
             Ocelot ocelot = (Ocelot)e;
             if (ocelot.getCatType() != Ocelot.Type.WILD_OCELOT) {
-                setValue(lore, "Cat Type", enumToHuman(ocelot.getCatType().name()));
+                lore.put("Cat Type", enumToHuman(ocelot.getCatType().name()));
             }
         }
         if (e instanceof Wolf) {
             Wolf wolf = (Wolf)e;
-            // if (wolf.isAngry()) {
-            //         setValue(lore, "Angry", "True");
-            // }
-            setValue(lore, "Collar Color", enumToHuman(wolf.getCollarColor().name()));
+            lore.put("Collar Color", enumToHuman(wolf.getCollarColor().name()));
         }
         if (e instanceof Villager) {
             Villager villager = (Villager)e;
-            setValue(lore, "Profession", enumToHuman(villager.getProfession().name()));
+            lore.put("Profession", enumToHuman(villager.getProfession().name()));
         }
         if (e instanceof Horse) {
             Horse horse = (Horse)e;
             if (e.getType() == EntityType.HORSE) {
-                Horse.Style style = horse.getStyle();
-                setValue(lore, "Horse Style", enumToHuman(style.name()));
                 Horse.Color color = horse.getColor();
-                setValue(lore, "Horse Color", enumToHuman(color.name()));
+                lore.put("Horse Color", enumToHuman(color.name()));
             }
         }
         if (e instanceof AbstractHorse) {
             AbstractHorse horse = (AbstractHorse)e;
-            if (!horse.isTamed()) {
-                int domestication = horse.getDomestication();
-                int maxDomestication = horse.getMaxDomestication();
-                setValue(lore, "Domestication", "" + domestication + "/" + maxDomestication);
+            if (horse.isTamed()) {
+                lore.put("Tamed", "True");
             }
             String horseJumpStrength = "" + horse.getJumpStrength();
             if (horseJumpStrength.length() > 4) {
                 horseJumpStrength = horseJumpStrength.substring(0, 4);
             }
-            setValue(lore, "Jump Strength", horseJumpStrength);
+            lore.put("Jump Strength", horseJumpStrength);
             try {
                 Double speed = Dirty.getHorseSpeed(horse);
-                if (speed != null) setValue(lore, "Speed", String.format("%.2f", speed));
+                if (speed != null) lore.put("Speed", String.format("%.2f", speed));
             } catch (Throwable t) {
                 t.printStackTrace();
-            }
-            for (ItemStack item : horse.getInventory()) {
-                if (item != null) {
-                    drops.add(item.clone());
-                }
             }
         }
         if (e instanceof ChestedHorse) {
             ChestedHorse horse = (ChestedHorse)e;
             if (horse.isCarryingChest()) {
-                setValue(lore, "Carries Chest", "True");
+                lore.put("Carries Chest", "True");
             }
         }
         if (e instanceof Llama) {
-            Llama llama = (Llama)e; // llama llama ding dong
-            setValue(lore, "Llama Color", enumToHuman(llama.getColor().name()));
+            Llama llama = (Llama)e;
+            lore.put("Llama Color", enumToHuman(llama.getColor().name()));
         }
         if (e instanceof Zombie) {
             Zombie zombie = (Zombie)e;
             if (zombie.isBaby()) {
-                setValue(lore, "Age", "Baby");
+                lore.put("Age", "Baby");
             }
         }
         if (e instanceof Creeper) {
             Creeper creeper = (Creeper)e;
             if (creeper.isPowered()) {
-                setValue(lore, "Powered", "True");
+                lore.put("Powered", "True");
             }
         }
         if (e instanceof Slime) {
             Slime slime = (Slime)e;
-            setValue(lore, "Size", "" + slime.getSize());
-        }
-        if (e instanceof Enderman) {
-            Enderman enderman = (Enderman)e;
-            MaterialData mat = enderman.getCarriedMaterial();
-            if (mat.getItemType() != Material.AIR) {
-                String hand = enumToHuman(mat.getItemType().name());
-                if (mat.getData() != (byte)0) {
-                    hand = hand + ":" + (int)mat.getData();
-                }
-                setValue(lore, "Hand", hand);
-            }
+            lore.put("Size", "" + slime.getSize());
         }
         if (e instanceof Rabbit) {
             Rabbit rabbit = (Rabbit)e;
-            setValue(lore, "Rabbit Type", enumToHuman(rabbit.getRabbitType().name()));
+            lore.put("Rabbit Type", enumToHuman(rabbit.getRabbitType().name()));
         }
-        if (e.getFireTicks() > 0) {
-            setValue(lore, "Fire", "" + e.getFireTicks());
-        }
-        {
-            EntityEquipment equip = e.getEquipment();
-            saveEquippedItem(lore, drops, equip.getItemInHand(), "Hand", equip.getItemInHandDropChance());
-            saveEquippedItem(lore, drops, equip.getHelmet(), "Helmet", equip.getHelmetDropChance());
-            saveEquippedItem(lore, drops, equip.getChestplate(), "Chestplate", equip.getChestplateDropChance());
-            saveEquippedItem(lore, drops, equip.getLeggings(), "Leggings", equip.getLeggingsDropChance());
-            saveEquippedItem(lore, drops, equip.getBoots(), "Boots", equip.getBootsDropChance());
-        }
-        return drops;
     }
 
-    private static Map<String, String> loreToMap(List<String> lore) {
+    public static Map<String, String> loreToMap(List<String> lore) {
         Map<String, String> result = new HashMap<String, String>();
         for (String i : lore) {
             String j = ChatColor.stripColor(i);
             String tokens[] = j.split(": *", 2);
             if (tokens.length == 2) {
                 result.put(tokens[0], tokens[1]);
+            } else {
+                result.put(tokens[0], "True");
             }
         }
         return result;
     }
 
-    public static LivingEntity useSpawnEgg(Location location, EntityType entityType, ItemStack item) {
-        ItemMeta meta = item.getItemMeta();
-        // Build the lore
-        Map<String, String> lore;
-        if (meta == null || !meta.hasLore()) {
-            lore = new HashMap<>();
-        } else {
-            lore = loreToMap(meta.getLore());
-        }
-        // Support legacy spawn eggs
-        if (entityType == EntityType.SKELETON) {
-            String skeletonType = getValue(lore, "Skeleton Type");
-            if (skeletonType == null) {
-                // Do nothing
-            } else if ("Normal".equalsIgnoreCase(skeletonType)) {
-                // Do nothing
-            } else if ("Stray".equalsIgnoreCase(skeletonType)) {
-                entityType = EntityType.STRAY;
-            } else if ("Wither".equalsIgnoreCase(skeletonType)) {
-                entityType = EntityType.WITHER_SKELETON;
-            }
-        } else if (entityType == EntityType.ZOMBIE) {
-            String zombieType = getValue(lore, "Zombie Type");
-            if ("Villager".equalsIgnoreCase(zombieType)) {
-                entityType = EntityType.ZOMBIE_VILLAGER;
-            }
-        } else if (entityType == EntityType.HORSE) {
-            String horseVariant = getValue(lore, "Horse Variant");
-            if (horseVariant == null) {
-            } else if ("Donkey".equalsIgnoreCase(horseVariant)) {
-                entityType = EntityType.DONKEY;
-            } else if ("Horse".equalsIgnoreCase(horseVariant)) {
-            } else if ("Llama".equalsIgnoreCase(horseVariant)) {
-                entityType = EntityType.LLAMA;
-            } else if ("Mule".equalsIgnoreCase(horseVariant)) {
-                entityType = EntityType.MULE;
-            } else if ("Skeleton Horse".equalsIgnoreCase(horseVariant)) {
-                entityType = EntityType.SKELETON_HORSE;
-            } else if ("Undead Horse".equalsIgnoreCase(horseVariant)) {
-                entityType = EntityType.ZOMBIE_HORSE;
-            }
-        }
-        // Spawn the entity
-        Entity e = location.getWorld().spawnEntity(location, entityType);
-        if (e == null || !e.isValid()) return null;
-        if (!(e instanceof LivingEntity)) {
-            e.remove();
-            return null;
-        }
-        LivingEntity living = (LivingEntity)e;
-        // Set the name
-        if (meta != null && meta.hasDisplayName()) {
-            living.setCustomName(ChatColor.translateAlternateColorCodes('&', meta.getDisplayName()));
-            living.setCustomNameVisible(true);
-            living.setRemoveWhenFarAway(false);
-            if (e instanceof Ageable) {
-                Ageable ageable = (Ageable)e;
-                ageable.setBreed(false);
-            }
-        }
-        applyLore(living, lore);
-        return living;
+    static String firstLetterUp(String s) {
+        if (s.length() == 0) return s;
+        if (s.length() == 1) return s.toUpperCase();
+        return "" + Character.toUpperCase(s.charAt(0)) + s.substring(1).toLowerCase();
     }
 
+    public static String enumToHuman(String s) {
+        String tokens[] = s.split("_");
+        if (tokens.length == 0) return "";
+        StringBuilder sb = new StringBuilder(firstLetterUp(tokens[0]));
+        for (int i = 1; i < tokens.length; ++i) {
+            sb.append(" ").append(firstLetterUp(tokens[i]));
+        }
+        return sb.toString();
+    }
+        
+    public static String humanToEnum(String s) {
+        return s.toUpperCase().replaceAll(" ", "_").replaceAll("-", "_");
+    }
+
+    public static void setValue(List<String> lore, String key, String value) {
+        final String PREFIX = "" + ChatColor.BLUE + ChatColor.ITALIC;
+        final String SEP = "" + ChatColor.GOLD + " ";
+        final String OFF = "" + ChatColor.DARK_GRAY;
+        final String VAL = "" + ChatColor.GOLD;
+        String line;
+        if (value.equals("True")) {
+            line = PREFIX + key;
+        } else if (value.contains("/")) {
+            String[] tokens = value.split("/", 2);
+            line = PREFIX + key + SEP + tokens[0] + OFF + "/" + VAL + tokens[1];
+        } else if (value.contains(".")) {
+            String[] tokens = value.split("\\.", 2);
+            line = PREFIX + key + SEP + tokens[0] + OFF + "." + VAL + tokens[1];
+        } else {
+            line = PREFIX + key + SEP + value;
+        }
+        lore.add(line);
+        return;
+    }
+
+    public static String getValue(Map<String, String> lore, String key) {
+        Object result = lore.get(key);
+        if (result == null) return null;
+        return result.toString();
+    }
+
+    public static boolean canUseBlock(Block block) {
+        if (block == null) return false;
+        BlockState state = block.getState();
+        if (state instanceof InventoryHolder) return true;
+        MaterialData data = state.getData();
+        if (state instanceof Button ||
+            state instanceof Lever ||
+            state instanceof Diode) return true;
+        return false;
+    }
+
+    public static boolean canEggify(Entity e) {
+        return canEggify(e.getType());
+    }
+
+    public static boolean canEggify(EntityType et) {
+        if (et == EntityType.PLAYER) return false;
+        if (!et.isAlive()) return false;
+        return true;
+    }
+
+    // Legacy
+    
+    public static ItemStack loadEquippedItem(Map<String, String> lore, String key) {
+        String value = getValue(lore, key);
+        if (value == null) return null;
+        String tokens[] = value.split(":");
+        Material mat;
+        try {
+            mat = Material.valueOf(humanToEnum(tokens[0]));
+        } catch (IllegalArgumentException iae) {
+            return null;
+        }
+        int d = 0;
+        if (tokens.length == 2) {
+            try {
+                d = Integer.parseInt(tokens[1]);
+            } catch (NumberFormatException nfe) {}
+        }
+        return new ItemStack(mat, 1, (short)d);
+    }
+    
     public static void applyLore(LivingEntity e, Map<String, String> lore) {
         // tamed wolves have more health than untamed
         // ones. So we handle Tameable first, then reset
@@ -365,18 +425,15 @@ public class Util {
                 } else {
                     try {
                         int h = Integer.parseInt(health);
-
                         // Horse fix: If there's no max health, make up a reasonable one.
                         if (e.getType() == EntityType.HORSE) {
                             damageable.setMaxHealth(Math.max(20, h));
                         }
-
                         damageable.setHealth(Math.max(2, h));
                     } catch (NumberFormatException nfe) {
                     } catch (IllegalArgumentException iae) {}
                 }
             }
-
             // Horses fix: When there aren't any
             // health information, make up reasonable
             // ones.
@@ -603,129 +660,5 @@ public class Util {
             equip.setLeggings(loadEquippedItem(lore, "Leggings"));
             equip.setBoots(loadEquippedItem(lore, "Boots"));
         }
-    }
-
-    public static boolean isSimpleItem(ItemStack item) {
-        if (item.getAmount() != 1) return false;
-        if (item.hasItemMeta()) return false;
-        return true;
-    }
-
-    /**
-     * Subroutine for saveMetaData()
-     */
-    public static void saveEquippedItem(Map<String, String> lore, Collection<ItemStack> drops, ItemStack item, String key, float dropChance) {
-        if (item == null || item.getType() == Material.AIR) return;
-        if (isSimpleItem(item)) {
-            if (item.getDurability() == 0) {
-                setValue(lore, key, enumToHuman(item.getType().name()));
-            } else {
-                setValue(lore, key, enumToHuman(item.getType().name() + ":" + item.getDurability()));
-            }
-        } else {
-            if (rnd.nextFloat() < dropChance) {
-                drops.add(item);
-            }
-        }
-    }
-
-    public static ItemStack loadEquippedItem(Map<String, String> lore, String key) {
-        String value = getValue(lore, key);
-        if (value == null) return null;
-        String tokens[] = value.split(":");
-        Material mat;
-        try {
-            mat = Material.valueOf(humanToEnum(tokens[0]));
-        } catch (IllegalArgumentException iae) {
-            return null;
-        }
-        int d = 0;
-        if (tokens.length == 2) {
-            try {
-                d = Integer.parseInt(tokens[1]);
-            } catch (NumberFormatException nfe) {}
-        }
-        return new ItemStack(mat, 1, (short)d);
-    }
-
-    public static String firstLetterUp(String s) {
-        if (s.length() == 0) return s;
-        if (s.length() == 1) return s.toUpperCase();
-        return "" + Character.toUpperCase(s.charAt(0)) + s.substring(1).toLowerCase();
-    }
-
-    public static String enumToHuman(String s) {
-        String tokens[] = s.split("_");
-        if (tokens.length == 0) return "";
-        StringBuilder sb = new StringBuilder(firstLetterUp(tokens[0]));
-        for (int i = 1; i < tokens.length; ++i) {
-            sb.append(" ").append(firstLetterUp(tokens[i]));
-        }
-        return sb.toString();
-    }
-        
-    public static String humanToEnum(String s) {
-        return s.toUpperCase().replaceAll(" ", "_").replaceAll("-", "_");
-    }
-
-    /**
-     * @return The value or null if key not found
-     */
-    private static String getValue(List<String> lore, String key) {
-        String search = key + ":";
-        for (String i : lore) {
-            String j = ChatColor.stripColor(i);
-            if (j.startsWith(search)) {
-                String tokens[] = j.split(": *", 2);
-                if (tokens.length != 2) return "";
-                return tokens[1];
-            }
-        }
-        return null;
-    }
-
-    private static String getValue(Map<String, String> lore, String key) {
-        Object result = lore.get(key);
-        if (result == null) return null;
-        return result.toString();
-    }
-
-    public static void setValue(Map<String, String> lore, String key, String value) {
-        lore.put(key, value);
-    }
-
-    public static void setValue(List<String> lore, String key, String value) {
-        String result = ChatColor.translateAlternateColorCodes('&', "&9&o" + key + "&8:&6 " + value);
-        String search = key + ":";
-        for (int i = 0; i < lore.size(); ++i) {
-            String j = ChatColor.stripColor(lore.get(i));
-            if (j.startsWith(search)) {
-                lore.set(i, result);
-                return;
-            }
-        }
-        lore.add(result);
-        return;
-    }
-
-    public static boolean canUseBlock(Block block) {
-        if (block == null) return false;
-        BlockState state = block.getState();
-        if (state instanceof InventoryHolder) return true;
-        MaterialData data = state.getData();
-        if (state instanceof Button ||
-            state instanceof Lever ||
-            state instanceof Diode) return true;
-        return false;
-    }
-
-    public static boolean canEggify(Entity e) {
-        return canEggify(e.getType());
-    }
-
-    public static boolean canEggify(EntityType et) {
-        if (et == EntityType.PLAYER) return false;
-        if (!et.isAlive()) return false;
-        return true;
     }
 }

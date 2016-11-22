@@ -5,11 +5,15 @@ EntityChance:
   default: 0.1
   animal: 0.75
   monster: 0.25
+  villager: 0.75
 EntityWeight:
   default: 100
   monster: 100
   animal: 1
+  villager: 10
 EntityMaxHealth:
-  default: 0
+  default: 10
   monster: 10
   animal: 100
+  villager: 100
+DebugMode: false

@@ -2,19 +2,25 @@ package com.winthier.pokemob.listener;
 
 import com.winthier.pokemob.PokeMobPlugin;
 import com.winthier.pokemob.Util;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 
 @RequiredArgsConstructor
 public class EntityListener implements Listener {
     final PokeMobPlugin plugin;
+    @Getter @Setter EntityType expectedEntity;
+    @Getter @Setter Entity spawnedEntity;
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.NORMAL)
     public void onEntityDeath(EntityDeathEvent event) {
@@ -26,5 +32,12 @@ public class EntityListener implements Listener {
         event.setDroppedExp(0);
         e.setHealth(1.0);
         Util.eggify(e);
+    }
+
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
+    public void onCreatureSpawn(CreatureSpawnEvent event) {
+        if (event.getEntity().getType() == expectedEntity) {
+            spawnedEntity = event.getEntity();
+        }
     }
 }

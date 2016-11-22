@@ -26,6 +26,7 @@ public class Configuration {
     private double defaultChance = 0.5, monsterChance = 0.5, animalChance = 1.0;
     private int defaultWeight = 10, monsterWeight = 10, animalWeight = 1;
     private int defaultMaxHealth = 100, monsterMaxHealth = 10, animalMaxHealth = 100;
+    private boolean debugMode = false;
 
     public void load() {
         totalWeight = plugin.getConfig().getInt("TotalWeight", 100);
@@ -100,6 +101,7 @@ public class Configuration {
                 }
             }
         }
+        debugMode = plugin.getConfig().getBoolean("DebugMode", debugMode);
     }
 
     public boolean canEggify(Entity e) {

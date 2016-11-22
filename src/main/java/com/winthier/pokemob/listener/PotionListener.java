@@ -30,6 +30,16 @@ public class PotionListener implements Listener {
     final PokeMobPlugin plugin;
     final Random random = new Random(System.currentTimeMillis());
 
+    static enum Check {
+        IMPOSSIBLE,
+        PERM,
+        TAMED,
+        HEALTH,
+        CHANCE,
+        SUCCESS,
+        ;
+    }
+
     static boolean potionHasSlowness(ThrownPotion potion) {
         for (PotionEffect effect : potion.getEffects()) {
             if (effect.getType().equals(PotionEffectType.SLOW)) return true;
@@ -47,52 +57,57 @@ public class PotionListener implements Listener {
         if (player == null && event.getPotion().getShooter() != null) return;
         int weight = plugin.getConfiguration().getTotalWeight();
         for (LivingEntity entity : event.getAffectedEntities()) {
-            if (!Util.canEggify(entity)) continue;
-            // Creative override
-            if (player != null && player.getGameMode() == GameMode.CREATIVE) {
-                Util.eggify(entity);
-                event.setIntensity(entity, 0.0);
-                continue;
-            }
-            if (!plugin.getConfiguration().canEggify(entity)) continue;
-            // Test event
-            EntityDamageByEntityEvent edbee = new EntityDamageByEntityEvent(event.getPotion(), entity, EntityDamageByEntityEvent.DamageCause.CUSTOM, 0.0);
-            plugin.getServer().getPluginManager().callEvent(edbee);
-            if (edbee.isCancelled()) continue;
+            Check check = shouldEggify(entity, player, event);
             Location loc = entity.getEyeLocation();
-            boolean success = hitEntity(entity, player);
-            if (success) {
+            event.setIntensity(entity, 0.0);
+            if (check == Check.SUCCESS) {
+                Util.eggify(entity);
                 loc.getWorld().playSound(loc, Sound.ENTITY_ZOMBIE_ATTACK_IRON_DOOR, 1.0f, 1.0f);
                 loc.getWorld().spawnParticle(Particle.CRIT, loc, 64, 0.5, 0.5, 0.5, 0.5);
-                event.setIntensity(entity, 0.0);
                 weight -= plugin.getConfiguration().getEntityWeight(entity);
                 if (weight <= 0) break;
-            } else {
+            } else if (check == Check.HEALTH) {
                 loc.getWorld().playSound(loc, Sound.BLOCK_FIRE_EXTINGUISH, 1.0f, 1.0f);
-                loc.getWorld().spawnParticle(Particle.SMOKE_NORMAL, loc, 24, 0.2, 0.2, 0.2, 0.01);
+                loc.getWorld().spawnParticle(Particle.DAMAGE_INDICATOR, loc, 12, 0.2, 0.2, 0.2, 0.2);
+            } else if (check == Check.CHANCE) {
+                loc.getWorld().playSound(loc, Sound.BLOCK_FIRE_EXTINGUISH, 1.0f, 1.0f);
+                loc.getWorld().spawnParticle(Particle.SMOKE_NORMAL, loc, 24, 0.4, 0.4, 0.4, 0.01);
+            } else if (check == Check.TAMED) {
+                loc.getWorld().playSound(loc, Sound.BLOCK_FIRE_EXTINGUISH, 1.0f, 1.0f);
+                loc.getWorld().spawnParticle(Particle.VILLAGER_ANGRY, loc, 24, 0.5, 0.5, 0.5, 0.01);
             }
         }
     }
 
-    boolean hitEntity(LivingEntity entity, Player player) {
+    Check shouldEggify(LivingEntity entity, Player player, PotionSplashEvent event) {
+        if (!Util.canEggify(entity)) return Check.IMPOSSIBLE;
+        if (player != null && player.getGameMode() == GameMode.CREATIVE) return Check.SUCCESS;
+        if (!plugin.getConfiguration().canEggify(entity)) return Check.PERM;
+        // Test event
+        EntityDamageByEntityEvent edbee = new EntityDamageByEntityEvent(event.getPotion(), entity, EntityDamageByEntityEvent.DamageCause.CUSTOM, 0.0);
+        plugin.getServer().getPluginManager().callEvent(edbee);
+        if (edbee.isCancelled()) return Check.PERM;
         // Check ownership
         if (entity instanceof Tameable) {
             Tameable tameable = (Tameable)entity;
             if (tameable.isTamed()) {
                 AnimalTamer owner = tameable.getOwner();
-                if (player == null || (owner != null && !owner.getUniqueId().equals(player.getUniqueId()))) {
-                    return false;
+                if (player == null) {
+                    return Check.TAMED;
+                } else if (owner != null && !owner.getUniqueId().equals(player.getUniqueId())) {
+                    return Check.TAMED;
+                } else {
+                    return Check.SUCCESS;
                 }
             }
         }
-        // Roll dice unless has colorful name
-        if (!Util.isPokeMob(entity)) {
-            double chance = plugin.getConfiguration().getEggifyChance(entity);
-            if (!plugin.getConfiguration().checkMaxHealth(entity)) return false;
-            if (random.nextDouble() > chance) return false;
-        }
+        // Check namedness
+        if (Util.isPokeMob(entity)) return Check.SUCCESS;
+        // Roll dice
+        if (!plugin.getConfiguration().checkMaxHealth(entity)) return Check.HEALTH;
+        double chance = plugin.getConfiguration().getEggifyChance(entity);
+        if (random.nextDouble() > chance) return Check.CHANCE;
         // We win
-        Util.eggify(entity);
-        return true;
+        return Check.SUCCESS;
     }
 }

@@ -1,6 +1,8 @@
 package com.winthier.pokemob;
 
 import java.lang.reflect.Field;
+import java.util.Arrays;
+import java.util.List;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -15,18 +17,46 @@ import net.minecraft.server.v1_11_R1.DataConverterSpawnEgg;
 import net.minecraft.server.v1_11_R1.EntityInsentient;
 import net.minecraft.server.v1_11_R1.GenericAttributes;
 import net.minecraft.server.v1_11_R1.NBTTagCompound;
+import net.minecraft.server.v1_11_R1.NBTTagList;
+import org.bukkit.craftbukkit.v1_11_R1.entity.CraftEntity;
 import org.bukkit.craftbukkit.v1_11_R1.entity.CraftLivingEntity;
 import org.bukkit.craftbukkit.v1_11_R1.inventory.CraftItemStack;
 
 public class Dirty {
-    static String minecraftNameOf(EntityType et) {
-        switch (et) {
-        case VINDICATOR: return "minecraft:vindication_illager";
-        case EVOKER: return "minecraft:evocation_illager";
-        case PIG_ZOMBIE: return "minecraft:zombie_pigman";
-        default:
-            return "minecraft:" + et.name().toLowerCase();
+    final static List<String> REMOVE_NBT_TAGS = Arrays.asList(
+        "Pos", "Rotation", "Motion", "FallDistance", "OnGround", "Dimension", "PortalCooldown", "UUIDMost", "UUIDLeast", "UUID", "Passengers", "HurtByTimestamp", "WorldUUIDLeast", "WorldUUIDMost", "Spigot.ticksLived", "Bukkit.updateLevel", "OwnerUUID"
+        );
+    public static ItemStack eggify(org.bukkit.entity.Entity e) {
+        ItemStack result = new org.bukkit.inventory.ItemStack(Material.MONSTER_EGG, 1);
+        try {
+            net.minecraft.server.v1_11_R1.ItemStack item = CraftItemStack.asNMSCopy(result);
+            if (!item.hasTag()) item.setTag(new NBTTagCompound());
+            if (!item.getTag().hasKeyOfType("EntityTag", 10)) item.getTag().set("EntityTag", new NBTTagCompound());
+            NBTTagCompound tag = item.getTag().getCompound("EntityTag");
+            net.minecraft.server.v1_11_R1.Entity nmsEntity = ((CraftEntity)e).getHandle();
+            nmsEntity.c(tag);
+            // Clean her up a bit
+            for (String name: REMOVE_NBT_TAGS) tag.remove(name);
+            NBTTagList tagList = tag.getList("Attributes", 10);
+            if (tagList != null) {
+                for (int i = 0; i < tagList.size(); ) {
+                    NBTTagCompound tagAttr = tagList.get(i);
+                    if ("generic.followRange".equals(tagAttr.getString("Name"))) {
+                        tagList.remove(i);
+                    } else {
+                        i += 1;
+                    }
+                }
+            }
+            result = CraftItemStack.asBukkitCopy(item);
+        } catch (Exception ex) {
+            ex.printStackTrace();
         }
+        return result;
+    }
+
+    static String minecraftNameOf(EntityType et) {
+        return "minecraft:" + et.getName();
     }
 
     public static ItemStack spawnEggOf(EntityType et) {
@@ -34,10 +64,12 @@ public class Dirty {
         String name = minecraftNameOf(et);
         try {
             net.minecraft.server.v1_11_R1.ItemStack item = CraftItemStack.asNMSCopy(result);
-            if(!item.hasTag())
+            if (!item.hasTag()) {
                 item.setTag(new NBTTagCompound());
-            if(!item.getTag().hasKeyOfType("EntityTag", 10))
+            }
+            if (!item.getTag().hasKeyOfType("EntityTag", 10)) {
                 item.getTag().set("EntityTag", new NBTTagCompound());
+            }
             item.getTag().getCompound("EntityTag").setString("id", name);
             result = CraftItemStack.asBukkitCopy(item);
         } catch (Exception e) {
@@ -55,14 +87,10 @@ public class Dirty {
                 item.getTag().set("EntityTag", new NBTTagCompound());
             String name = item.getTag().getCompound("EntityTag").getString("id");
             if (name.startsWith("minecraft:")) {
-                String val = name.substring(10);
-                if ("vindication_illager".equals(val)) return EntityType.VINDICATOR;
-                if ("evocation_illager".equals(val)) return EntityType.EVOKER;
-                if ("zombie_pigman".equals(val)) return EntityType.PIG_ZOMBIE;
                 try {
-                    return EntityType.valueOf(val.toUpperCase());
+                    return EntityType.fromName(name.substring(10));
                 } catch (IllegalArgumentException iae) {
-                    System.err.println("PokeMob: Cannot find EntityType for '" + name + "'");
+                    PokeMobPlugin.getInstance().getLogger().warning("Cannot find EntityType for '" + name + "'");
                 }
             }
             // Fetch Legacy Name
@@ -79,6 +107,21 @@ public class Dirty {
         return null;
     }
 
+    public static String getSpawnEggDataTag(ItemStack itemStack) {
+        try {
+            net.minecraft.server.v1_11_R1.ItemStack item = CraftItemStack.asNMSCopy(itemStack);
+            if(!item.hasTag()) return null;
+            if(!item.getTag().hasKeyOfType("EntityTag", 10)) return null;
+            NBTTagCompound compound = item.getTag().getCompound("EntityTag");
+            int size = compound.d();
+            if (size < 2) return null;
+            return compound.toString();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+    
     public static Double getHorseSpeed(AbstractHorse h){
         AttributeInstance attributes = ((EntityInsentient)((CraftLivingEntity)h).getHandle()).getAttributeInstance(GenericAttributes.MOVEMENT_SPEED);
         return attributes.getValue();
