@@ -7,10 +7,20 @@ import com.winthier.pokemob.listener.PotionListener;
 import com.winthier.pokemob.listener.SpawnEggListener;
 import java.util.List;
 import lombok.Getter;
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
+import org.bukkit.inventory.ItemFlag;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.PotionMeta;
+import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.potion.PotionData;
+import org.bukkit.potion.PotionType;
 
 @Getter
 public class PokeMobPlugin extends JavaPlugin {
@@ -62,5 +72,15 @@ public class PokeMobPlugin extends JavaPlugin {
         Entity result = entityListener.getSpawnedEntity();
         entityListener.setSpawnedEntity(null);
         return result;
+    }
+
+    public ItemStack spawnPotion(int amount) {
+        ItemStack item = new ItemStack(Material.SPLASH_POTION, amount);
+        PotionMeta meta = (PotionMeta)item.getItemMeta();
+        meta.setBasePotionData(new PotionData(PotionType.SLOWNESS));
+        meta.setDisplayName("" + ChatColor.BLUE + ChatColor.BOLD + "PokéMob Potion");
+        meta.addItemFlags(ItemFlag.HIDE_POTION_EFFECTS);
+        item.setItemMeta(meta);
+        return item;
     }
 }

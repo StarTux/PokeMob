@@ -1,23 +1,20 @@
 package com.winthier.pokemob.listener;
 
+import com.winthier.pokemob.Msg;
 import com.winthier.pokemob.PokeMobPlugin;
 import com.winthier.pokemob.Util;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.PotionMeta;
-import org.bukkit.potion.PotionData;
-import org.bukkit.potion.PotionType;
 
 @RequiredArgsConstructor
 public class CommandListener implements CommandExecutor {
@@ -51,16 +48,30 @@ public class CommandListener implements CommandExecutor {
             for (EntityType key : plugin.getConfiguration().getEntityMaxHealth().keySet()) {
                 sender.sendMessage("- " + key.name() + ": " + plugin.getConfiguration().entityMaxHealth.get(key));
             }
-        } else if (args.length == 1 && args[0].equals("potion")) {
+        } else if (args.length >= 1 && args[0].equals("potion")) {
             Player player = sender instanceof Player ? (Player)sender : null;
+            if (args.length >= 2) {
+                String tmp = args[1];
+                player = plugin.getServer().getPlayerExact(tmp);
+            }
             if (player == null) return false;
-            ItemStack item = new ItemStack(Material.SPLASH_POTION, 64);
-            PotionMeta meta = (PotionMeta)item.getItemMeta();
-            meta.setBasePotionData(new PotionData(PotionType.SLOWNESS));
-            meta.setDisplayName("" + ChatColor.BLUE + ChatColor.BOLD + "PokéMob Potion");
-            meta.addItemFlags(ItemFlag.HIDE_POTION_EFFECTS);
-            item.setItemMeta(meta);
-            player.getWorld().dropItem(player.getEyeLocation(), item).setPickupDelay(0);
+            int amount = 64;
+            if (args.length >= 3) {
+                String tmp = args[2];
+                try {
+                    amount = Integer.parseInt(tmp);
+                } catch (NumberFormatException nfe) {
+                    return false;
+                }
+            }
+            if (amount < 1) return false;
+            final int totalAmount = amount;
+            while (amount > 0) {
+                int thisAmount = Math.min(64, amount);
+                amount -= thisAmount;
+                player.getWorld().dropItem(player.getEyeLocation(), plugin.spawnPotion(thisAmount)).setPickupDelay(0);
+            }
+            Msg.info(sender, "Gave %d potions to %s.", totalAmount, player.getName());
         } else if (args.length == 3 && args[0].equals("mod")) {
             if (!(sender instanceof Player)) {
                 sender.sendMessage("Player expected");
@@ -89,7 +100,7 @@ public class CommandListener implements CommandExecutor {
     void usage(CommandSender sender) {
         sender.sendMessage("/PokeMob info");
         sender.sendMessage("/PokeMob reload");
-        sender.sendMessage("/PokeMob potion");
+        sender.sendMessage("/PokeMob potion [player] [amount]");
         sender.sendMessage("/PokeMob mod <key> <value>");
     }
 }
