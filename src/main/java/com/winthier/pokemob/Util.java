@@ -228,7 +228,9 @@ public class Util {
         }
         if (e instanceof Wolf) {
             Wolf wolf = (Wolf)e;
-            lore.put("Collar Color", enumToHuman(wolf.getCollarColor().name()));
+            if (wolf.isTamed()) {
+                lore.put("Collar Color", enumToHuman(wolf.getCollarColor().name()));
+            }
         }
         if (e instanceof Villager) {
             Villager villager = (Villager)e;
