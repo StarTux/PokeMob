@@ -13,6 +13,8 @@ import org.bukkit.ChatColor;
 import org.bukkit.DyeColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.entity.AbstractHorse;
@@ -147,10 +149,6 @@ public class Util {
         return true;
     }
 
-    static ItemStack getMonsterEgg(Entity e) {
-        return Dirty.spawnEggOf(e.getType());
-    }
-
     /**
      * @return A collection of dropped items or null
      */
@@ -253,12 +251,8 @@ public class Util {
                 horseJumpStrength = horseJumpStrength.substring(0, 4);
             }
             lore.put("Jump Strength", horseJumpStrength);
-            try {
-                Double speed = Dirty.getHorseSpeed(horse);
-                if (speed != null) lore.put("Speed", String.format("%.2f", speed));
-            } catch (Throwable t) {
-                t.printStackTrace();
-            }
+            AttributeInstance att = horse.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED);
+            lore.put("Speed", String.format("%.2f", att.getBaseValue()));
         }
         if (e instanceof ChestedHorse) {
             ChestedHorse horse = (ChestedHorse)e;
@@ -562,7 +556,7 @@ public class Util {
                 String horseSpeed = getValue(lore, "Speed");
                 if (horseSpeed != null) {
                     double speed = Double.parseDouble(horseSpeed);
-                    Dirty.setHorseSpeed(horse, speed);
+                    horse.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).setBaseValue(speed);
                 }
             } catch (NumberFormatException nfe) {
             } catch (Throwable t) {

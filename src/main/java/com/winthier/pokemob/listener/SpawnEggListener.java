@@ -3,6 +3,7 @@ package com.winthier.pokemob.listener;
 import com.winthier.pokemob.Dirty;
 import com.winthier.pokemob.PokeMobPlugin;
 import com.winthier.pokemob.Util;
+import lombok.RequiredArgsConstructor;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -25,7 +26,7 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
-import lombok.RequiredArgsConstructor;
+import org.bukkit.inventory.meta.SpawnEggMeta;
 
 @RequiredArgsConstructor
 public class SpawnEggListener implements Listener {
@@ -42,7 +43,8 @@ public class SpawnEggListener implements Listener {
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
         Player player = event.getPlayer();
         Location loc = event.getClickedBlock().getRelative(event.getBlockFace()).getLocation().add(0.5, 0.0, 0.5);
-        EntityType et = Dirty.getSpawnEggType(event.getItem());
+        SpawnEggMeta meta = (SpawnEggMeta)event.getItem().getItemMeta();
+        EntityType et = meta.getSpawnedType();
         if (et == null || et.getEntityClass() == null) {
             plugin.getLogger().warning(String.format("Player %s tried to release %s from spawn egg at %s,%d,%d,%d, but entity cannot be spawned!", player.getName(), (et != null ? Util.enumToHuman(et.name()) : "null"), loc.getWorld().getName(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ()));
             return;
@@ -91,7 +93,8 @@ public class SpawnEggListener implements Listener {
         if (event.getBlock().getType() != Material.DISPENSER) return;
         event.setCancelled(true);
         Location loc = event.getBlock().getLocation();
-        EntityType et = Dirty.getSpawnEggType(event.getItem());
+        SpawnEggMeta meta = (SpawnEggMeta)event.getItem().getItemMeta();
+        EntityType et = meta.getSpawnedType();
         if (et == null || et.getEntityClass() == null || !plugin.getConfiguration().canRelease(et)) {
             plugin.getLogger().warning(String.format("%s was dispensed from spawn egg at %s,%d,%d,%d without permission!", (et != null ? Util.enumToHuman(et.name()) : "null"), loc.getWorld().getName(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ()));
             return;
