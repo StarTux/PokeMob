@@ -1,5 +1,6 @@
 package com.winthier.pokemob.listener;
 
+import com.winthier.pokemob.Dirty;
 import com.winthier.pokemob.Msg;
 import com.winthier.pokemob.PokeMobPlugin;
 import com.winthier.pokemob.Util;
@@ -91,6 +92,10 @@ public class CommandListener implements CommandExecutor {
             meta.setLore(lore);
             player.getItemInHand().setItemMeta(meta);
             player.sendMessage("Attribute modified");
+        } else if (args.length == 1 && args[0].equals("debug")) {
+            Player player = sender instanceof Player ? (Player)sender : null;
+            String tag = Dirty.getSpawnEggDataTag(player.getInventory().getItemInHand());
+            player.sendMessage("tag = " + tag);
         } else {
             usage(sender);
         }
@@ -102,5 +107,6 @@ public class CommandListener implements CommandExecutor {
         sender.sendMessage("/PokeMob reload");
         sender.sendMessage("/PokeMob potion [player] [amount]");
         sender.sendMessage("/PokeMob mod <key> <value>");
+        sender.sendMessage("/PokeMob debug");
     }
 }
