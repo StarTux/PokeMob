@@ -62,7 +62,7 @@ public class PotionListener implements Listener {
             event.setIntensity(entity, 0.0);
             if (check == Check.SUCCESS) {
                 Util.eggify(entity);
-                loc.getWorld().playSound(loc, Sound.ENTITY_ZOMBIE_ATTACK_IRON_DOOR, 1.0f, 1.0f);
+                loc.getWorld().playSound(loc, Sound.ENTITY_ZOMBIE_ATTACK_IRON_DOOR, 0.3f, 1.2f);
                 loc.getWorld().spawnParticle(Particle.CRIT, loc, 64, 0.5, 0.5, 0.5, 0.5);
                 weight -= plugin.getConfiguration().getEntityWeight(entity);
                 if (weight <= 0) break;

@@ -5,6 +5,7 @@ import com.winthier.pokemob.Util;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import org.bukkit.Sound;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
@@ -31,6 +32,7 @@ public class EntityListener implements Listener {
         event.getDrops().clear();
         event.setDroppedExp(0);
         e.setHealth(1.0);
+        e.getWorld().playSound(e.getLocation(), Sound.ENTITY_ZOMBIE_ATTACK_IRON_DOOR, 0.3f, 1.2f);
         Util.eggify(e);
     }
 
