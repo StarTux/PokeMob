@@ -263,6 +263,9 @@ public class Util {
         if (e instanceof Llama) {
             Llama llama = (Llama)e;
             lore.put("Llama Color", enumToHuman(llama.getColor().name()));
+            if (llama.isAdult()) {
+                lore.put("Strength", "" + llama.getStrength());
+            }
         }
         if (e instanceof Zombie) {
             Zombie zombie = (Zombie)e;
