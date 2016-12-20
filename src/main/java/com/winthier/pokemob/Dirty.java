@@ -23,8 +23,11 @@ import org.bukkit.craftbukkit.v1_11_R1.entity.CraftLivingEntity;
 import org.bukkit.craftbukkit.v1_11_R1.inventory.CraftItemStack;
 
 public class Dirty {
+    // Cats (and possibly others) do not have a "Tame" tag.  They
+    // either have an owner or don't.  Therefore, we may not
+    // delete OwnerUUID.
     final static List<String> REMOVE_NBT_TAGS = Arrays.asList(
-        "Pos", "Rotation", "Motion", "FallDistance", "OnGround", "Dimension", "PortalCooldown", "UUIDMost", "UUIDLeast", "UUID", "Passengers", "HurtByTimestamp", "WorldUUIDLeast", "WorldUUIDMost", "Spigot.ticksLived", "Bukkit.updateLevel", "OwnerUUID", "Leashed", "Leash"
+        "Pos", "Rotation", "Motion", "FallDistance", "OnGround", "Dimension", "PortalCooldown", "UUIDMost", "UUIDLeast", "UUID", "Passengers", "HurtByTimestamp", "WorldUUIDLeast", "WorldUUIDMost", "Spigot.ticksLived", "Bukkit.updateLevel", "Leashed", "Leash"
         );
     public static ItemStack eggify(org.bukkit.entity.Entity e) {
         ItemStack result = new org.bukkit.inventory.ItemStack(Material.MONSTER_EGG, 1);
