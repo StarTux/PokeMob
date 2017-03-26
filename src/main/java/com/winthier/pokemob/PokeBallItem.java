@@ -5,6 +5,7 @@ import com.winthier.custom.item.CustomItem;
 import com.winthier.custom.item.ItemContext;
 import com.winthier.custom.item.ItemDescription;
 import com.winthier.custom.item.UncraftableItem;
+import com.winthier.custom.item.UpdatableItem;
 import com.winthier.generic_events.ItemNameEvent;
 import java.util.UUID;
 import lombok.Getter;
@@ -34,7 +35,7 @@ import org.bukkit.util.Consumer;
 import org.bukkit.util.Vector;
 
 @Getter
-public class PokeBallItem implements CustomItem, UncraftableItem {
+public class PokeBallItem implements CustomItem, UncraftableItem, UpdatableItem {
     private final PokeMobPlugin plugin;
     private final String customId = "pokemob:pokeball";
     private final String displayName;
@@ -67,9 +68,9 @@ public class PokeBallItem implements CustomItem, UncraftableItem {
         return result;
     }
 
-    @EventHandler(priority = EventPriority.LOW)
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void onBlockPlace(BlockPlaceEvent event, ItemContext context) {
-        event.setCancelled(true);
+        CustomPlugin.getInstance().getBlockManager().wrapBlock(event.getBlock(), customId);
     }
 
     @EventHandler(priority = EventPriority.LOW)
@@ -77,6 +78,7 @@ public class PokeBallItem implements CustomItem, UncraftableItem {
         switch (event.getAction()) {
         case RIGHT_CLICK_BLOCK:
         case RIGHT_CLICK_AIR:
+            if (context.getPlayer().isSneaking()) return;
             event.setCancelled(true);
             Player player = event.getPlayer();
             ItemStack item = context.getItemStack();
@@ -147,5 +149,10 @@ public class PokeBallItem implements CustomItem, UncraftableItem {
     @EventHandler
     public void onItemName(ItemNameEvent event, ItemContext context) {
         event.setItemName(displayName);
+    }
+
+    @Override
+    public void updateItem(ItemStack item) {
+        itemDescription.apply(item);
     }
 }

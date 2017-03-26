@@ -89,5 +89,6 @@ public class PokeMobPlugin extends JavaPlugin implements Listener {
     @EventHandler
     public void onCustomRegister(CustomRegisterEvent event) {
         event.addItem(new PokeBallItem(this));
+        event.addBlock(new PokeBallBlock(this));
     }
 }
