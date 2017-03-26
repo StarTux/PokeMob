@@ -37,6 +37,20 @@
       <version>1.14.8</version>
       <scope>provided</scope>
     </dependency>
+    <!-- Custom -->
+    <dependency>
+      <groupId>com.winthier.custom</groupId>
+      <artifactId>custom</artifactId>
+      <version>0.1</version>
+      <scope>provided</scope>
+    </dependency>
+    <!-- GenericEvents -->
+    <dependency>
+      <groupId>com.winthier.generic_events</groupId>
+      <artifactId>generic_events</artifactId>
+      <version>0.1</version>
+      <scope>provided</scope>
+    </dependency>
   </dependencies>
   <build>
     <plugins>

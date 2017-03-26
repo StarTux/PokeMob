@@ -2,6 +2,7 @@ name: PokeMob
 author: StarTux
 version: 0.2
 main: com.winthier.pokemob.PokeMobPlugin
+depend: [ Custom, GenericEvents ]
 commands:
   pokemob:
     description: admin command interface

@@ -1,5 +1,6 @@
 package com.winthier.pokemob.listener;
 
+import com.winthier.custom.CustomPlugin;
 import com.winthier.pokemob.PokeMobPlugin;
 import lombok.RequiredArgsConstructor;
 import org.bukkit.ChatColor;
@@ -25,14 +26,14 @@ public class BrewerListener implements Listener {
         final BrewerInventory inv = event.getContents();
         new BukkitRunnable() {
             @Override public void run() {
-                for (ItemStack item: inv) {
-                    if (item == null) continue;
-                    if (item.getType() != Material.SPLASH_POTION) continue;
+                for (int i = 0; i < inv.getSize(); ++i) {
+                    ItemStack item = inv.getItem(i);
+                    if (item == null || item.getType() != Material.SPLASH_POTION) continue;
                     PotionMeta meta = (PotionMeta)item.getItemMeta();
                     if (meta.getBasePotionData().getType() != PotionType.SLOWNESS) continue;
-                    meta.setDisplayName("" + ChatColor.BLUE + ChatColor.BOLD + "PokéMob Potion");
-                    meta.addItemFlags(ItemFlag.HIDE_POTION_EFFECTS);
-                    item.setItemMeta(meta);
+                    if (item == null) continue;
+                    if (item.getType() != Material.SPLASH_POTION) continue;
+                    inv.setItem(i, CustomPlugin.getInstance().getItemManager().spawnItemStack("pokemob:pokeball", item.getAmount()));
                 }
             }
         }.runTask(plugin);
