@@ -139,16 +139,18 @@ public class PokeBallItem implements CustomItem, UncraftableItem, UpdatableItem 
 
     void throwPotion(Player player) {
         SplashPotion potion = player.launchProjectile(SplashPotion.class);
+        if (potion == null) return;
         ItemStack item = potion.getItem();
         PotionMeta meta = (PotionMeta)item.getItemMeta();
         meta.setBasePotionData(new PotionData(PotionType.SLOWNESS));
         item.setItemMeta(meta);
         potion.setItem(item);
+        potion.getWorld().playSound(potion.getLocation(), Sound.BLOCK_DISPENSER_LAUNCH, 0.5f, 0.5f);
     }
 
     @EventHandler
     public void onItemName(ItemNameEvent event, ItemContext context) {
-        event.setItemName(displayName);
+        event.setItemName("Pokeball");
     }
 
     @Override
