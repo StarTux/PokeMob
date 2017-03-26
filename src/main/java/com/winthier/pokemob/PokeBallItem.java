@@ -5,6 +5,7 @@ import com.winthier.custom.item.CustomItem;
 import com.winthier.custom.item.ItemContext;
 import com.winthier.custom.item.ItemDescription;
 import com.winthier.custom.item.UncraftableItem;
+import com.winthier.generic_events.ItemNameEvent;
 import java.util.UUID;
 import lombok.Getter;
 import org.bukkit.GameMode;
@@ -141,5 +142,10 @@ public class PokeBallItem implements CustomItem, UncraftableItem {
         meta.setBasePotionData(new PotionData(PotionType.SLOWNESS));
         item.setItemMeta(meta);
         potion.setItem(item);
+    }
+
+    @EventHandler
+    public void onItemName(ItemNameEvent event, ItemContext context) {
+        event.setItemName(displayName);
     }
 }
