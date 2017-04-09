@@ -1,5 +1,6 @@
 package com.winthier.pokemob.listener;
 
+import com.winthier.generic_events.GenericEventsPlugin;
 import com.winthier.pokemob.PokeMobPlugin;
 import com.winthier.pokemob.Util;
 import java.util.Random;
@@ -85,6 +86,7 @@ public class PotionListener implements Listener {
         if (!plugin.getConfiguration().canEggify(entity)) return Check.PERM;
         if (entity.isLeashed() && entity.getLeashHolder() instanceof Player) return Check.PERM;
         // Test event
+        if (player != null && !GenericEventsPlugin.getInstance().playerCanDamageEntity(player, entity)) return Check.PERM;
         EntityDamageByEntityEvent edbee = new EntityDamageByEntityEvent(event.getPotion(), entity, EntityDamageByEntityEvent.DamageCause.CUSTOM, 0.0);
         plugin.getServer().getPluginManager().callEvent(edbee);
         if (edbee.isCancelled()) return Check.PERM;

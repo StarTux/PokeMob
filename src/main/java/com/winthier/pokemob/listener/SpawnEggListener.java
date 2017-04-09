@@ -1,5 +1,6 @@
 package com.winthier.pokemob.listener;
 
+import com.winthier.generic_events.GenericEventsPlugin;
 import com.winthier.pokemob.Dirty;
 import com.winthier.pokemob.PokeMobPlugin;
 import com.winthier.pokemob.Util;
@@ -53,6 +54,7 @@ public class SpawnEggListener implements Listener {
             plugin.getLogger().warning(String.format("Player %s tried to release %s from spawn egg at %s,%d,%d,%d, but lacks permission!", player.getName(), (et != null ? Util.enumToHuman(et.name()) : "null"), loc.getWorld().getName(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ()));
             return;
         }
+        if (!GenericEventsPlugin.getInstance().playerCanBuild(player, loc.getBlock())) return;
         LivingEntity e = Util.useSpawnEgg(loc, et, event.getItem());
         if (e == null) return;
         et = e.getType();
