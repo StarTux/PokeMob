@@ -85,6 +85,7 @@ public class PotionListener implements Listener {
         if (player != null && player.getGameMode() == GameMode.CREATIVE) return Check.SUCCESS;
         if (!plugin.getConfiguration().canEggify(entity)) return Check.PERM;
         if (entity.isLeashed() && entity.getLeashHolder() instanceof Player) return Check.PERM;
+        if (entity.getHealth() < 0.01) return Check.HEALTH;
         // Test event
         if (player != null && !GenericEventsPlugin.getInstance().playerCanDamageEntity(player, entity)) return Check.PERM;
         EntityDamageByEntityEvent edbee = new EntityDamageByEntityEvent(event.getPotion(), entity, EntityDamageByEntityEvent.DamageCause.CUSTOM, 0.0);
