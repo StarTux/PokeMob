@@ -12,15 +12,15 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
-import net.minecraft.server.v1_11_R1.AttributeInstance;
-import net.minecraft.server.v1_11_R1.DataConverterSpawnEgg;
-import net.minecraft.server.v1_11_R1.EntityInsentient;
-import net.minecraft.server.v1_11_R1.GenericAttributes;
-import net.minecraft.server.v1_11_R1.NBTTagCompound;
-import net.minecraft.server.v1_11_R1.NBTTagList;
-import org.bukkit.craftbukkit.v1_11_R1.entity.CraftEntity;
-import org.bukkit.craftbukkit.v1_11_R1.entity.CraftLivingEntity;
-import org.bukkit.craftbukkit.v1_11_R1.inventory.CraftItemStack;
+import net.minecraft.server.v1_12_R1.AttributeInstance;
+import net.minecraft.server.v1_12_R1.DataConverterSpawnEgg;
+import net.minecraft.server.v1_12_R1.EntityInsentient;
+import net.minecraft.server.v1_12_R1.GenericAttributes;
+import net.minecraft.server.v1_12_R1.NBTTagCompound;
+import net.minecraft.server.v1_12_R1.NBTTagList;
+import org.bukkit.craftbukkit.v1_12_R1.entity.CraftEntity;
+import org.bukkit.craftbukkit.v1_12_R1.entity.CraftLivingEntity;
+import org.bukkit.craftbukkit.v1_12_R1.inventory.CraftItemStack;
 
 public class Dirty {
     // Cats (and possibly others) do not have a "Tame" tag.  They
@@ -32,11 +32,11 @@ public class Dirty {
     public static ItemStack eggify(org.bukkit.entity.Entity e) {
         ItemStack result = new org.bukkit.inventory.ItemStack(Material.MONSTER_EGG, 1);
         try {
-            net.minecraft.server.v1_11_R1.ItemStack item = CraftItemStack.asNMSCopy(result);
+            net.minecraft.server.v1_12_R1.ItemStack item = CraftItemStack.asNMSCopy(result);
             if (!item.hasTag()) item.setTag(new NBTTagCompound());
             if (!item.getTag().hasKeyOfType("EntityTag", 10)) item.getTag().set("EntityTag", new NBTTagCompound());
             NBTTagCompound tag = item.getTag().getCompound("EntityTag");
-            net.minecraft.server.v1_11_R1.Entity nmsEntity = ((CraftEntity)e).getHandle();
+            net.minecraft.server.v1_12_R1.Entity nmsEntity = ((CraftEntity)e).getHandle();
             nmsEntity.c(tag);
             // Clean her up a bit
             for (String name: REMOVE_NBT_TAGS) tag.remove(name);
@@ -60,7 +60,7 @@ public class Dirty {
 
     public static String getSpawnEggDataTag(ItemStack itemStack) {
         try {
-            net.minecraft.server.v1_11_R1.ItemStack item = CraftItemStack.asNMSCopy(itemStack);
+            net.minecraft.server.v1_12_R1.ItemStack item = CraftItemStack.asNMSCopy(itemStack);
             if(!item.hasTag()) return null;
             if(!item.getTag().hasKeyOfType("EntityTag", 10)) return null;
             NBTTagCompound compound = item.getTag().getCompound("EntityTag");
