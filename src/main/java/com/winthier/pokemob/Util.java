@@ -29,6 +29,7 @@ import org.bukkit.entity.Horse;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Llama;
 import org.bukkit.entity.Ocelot;
+import org.bukkit.entity.Parrot;
 import org.bukkit.entity.Pig;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Rabbit;
@@ -223,6 +224,10 @@ public class Util {
             if (ocelot.getCatType() != Ocelot.Type.WILD_OCELOT) {
                 lore.put("Cat Type", enumToHuman(ocelot.getCatType().name()));
             }
+        }
+        if (e instanceof Parrot) {
+            Parrot parrot = (Parrot)e;
+            lore.put("Color", enumToHuman(parrot.getVariant().name()));
         }
         if (e instanceof Wolf) {
             Wolf wolf = (Wolf)e;
