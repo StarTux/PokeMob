@@ -26,14 +26,15 @@ public class EntityListener implements Listener {
     @EventHandler(ignoreCancelled = true, priority = EventPriority.NORMAL)
     public void onEntityDeath(EntityDeathEvent event) {
         LivingEntity e = event.getEntity();
-        if (e.getType() == EntityType.VILLAGER && e.getLastDamageCause() instanceof EntityDamageByEntityEvent && ((EntityDamageByEntityEvent)e.getLastDamageCause()).getDamager().getType() == EntityType.ZOMBIE) return;                    
+        if (e.getType() == EntityType.VILLAGER && e.getLastDamageCause() instanceof EntityDamageByEntityEvent && ((EntityDamageByEntityEvent)e.getLastDamageCause()).getDamager().getType() == EntityType.ZOMBIE) return;
         if (!plugin.getConfiguration().canEggify(e)) return;
         if (!Util.isPokeMob(e)) return;
         event.getDrops().clear();
         event.setDroppedExp(0);
         e.setHealth(1.0);
-        e.getWorld().playSound(e.getLocation(), Sound.ENTITY_ZOMBIE_ATTACK_IRON_DOOR, 0.3f, 1.2f);
-        Util.eggify(e);
+        if (Util.eggify(e)) {
+            e.getWorld().playSound(e.getLocation(), Sound.ENTITY_ZOMBIE_ATTACK_IRON_DOOR, 0.3f, 1.2f);
+        }
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)

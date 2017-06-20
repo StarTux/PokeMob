@@ -53,16 +53,17 @@ import org.bukkit.material.Lever;
 import org.bukkit.material.MaterialData;
 
 public class Util {
-    public static void eggify(LivingEntity e) {
-        if (!canEggify(e)) return;
+    public static boolean eggify(LivingEntity e) {
+        if (!canEggify(e)) return false;
         ItemStack stack = Dirty.eggify(e);
-        if (stack == null) return;
+        if (stack == null) return false;
         saveLore(e, stack);
         Location loc = e.getLocation();
         e.getWorld().dropItemNaturally(loc, stack);
         e.getEquipment().clear();
         if (e instanceof InventoryHolder) ((InventoryHolder)e).getInventory().clear();
         e.remove();
+        return true;
     }
 
     public static LivingEntity useSpawnEgg(Location location, EntityType entityType, ItemStack item) {
