@@ -11,6 +11,7 @@ import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.entity.AnimalTamer;
 import org.bukkit.entity.Creature;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
@@ -56,8 +57,11 @@ public class PotionListener implements Listener {
             player = (Player)event.getPotion().getShooter();
         }
         if (player == null && event.getPotion().getShooter() != null) return;
+        event.setCancelled(true);
         int weight = plugin.getConfiguration().getTotalWeight();
         for (LivingEntity entity : event.getAffectedEntities()) {
+            if (!entity.isValid() || entity.isDead()) continue;
+            if (entity.getType() == EntityType.ARMOR_STAND) continue;
             Check check = shouldEggify(entity, player, event);
             Location loc = entity.getEyeLocation();
             event.setIntensity(entity, 0.0);

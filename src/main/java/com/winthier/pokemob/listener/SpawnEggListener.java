@@ -47,18 +47,24 @@ public class SpawnEggListener implements Listener {
         SpawnEggMeta meta = (SpawnEggMeta)event.getItem().getItemMeta();
         EntityType et = meta.getSpawnedType();
         if (et == null || et.getEntityClass() == null) {
-            plugin.getLogger().warning(String.format("Player %s tried to release %s from spawn egg at %s,%d,%d,%d, but entity cannot be spawned!", player.getName(), (et != null ? Util.enumToHuman(et.name()) : "null"), loc.getWorld().getName(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ()));
+            if (plugin.getConfiguration().isDebugMode()) {
+                plugin.getLogger().warning(String.format("Player %s tried to release %s from spawn egg at %s,%d,%d,%d, but entity cannot be spawned!", player.getName(), (et != null ? Util.enumToHuman(et.name()) : "null"), loc.getWorld().getName(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ()));
+            }
             return;
         }
         if (!plugin.getConfiguration().canRelease(et)) {
-            plugin.getLogger().warning(String.format("Player %s tried to release %s from spawn egg at %s,%d,%d,%d, but lacks permission!", player.getName(), (et != null ? Util.enumToHuman(et.name()) : "null"), loc.getWorld().getName(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ()));
+            if (plugin.getConfiguration().isDebugMode()) {
+                plugin.getLogger().warning(String.format("Player %s tried to release %s from spawn egg at %s,%d,%d,%d, but lacks permission!", player.getName(), (et != null ? Util.enumToHuman(et.name()) : "null"), loc.getWorld().getName(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ()));
+            }
             return;
         }
         if (!GenericEventsPlugin.getInstance().playerCanBuild(player, loc.getBlock())) return;
         LivingEntity e = Util.useSpawnEgg(loc, et, event.getItem());
         if (e == null) return;
         et = e.getType();
-        PokeMobPlugin.getInstance().getLogger().info(String.format("%s used %s spawn egg in %s at %d,%d,%d.", player.getName(), Util.enumToHuman(et.name()), loc.getWorld().getName(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ()));
+        if (plugin.getConfiguration().isDebugMode()) {
+            plugin.getLogger().info(String.format("%s used %s spawn egg in %s at %d,%d,%d.", player.getName(), Util.enumToHuman(et.name()), loc.getWorld().getName(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ()));
+        }
         if (e instanceof Tameable) {
             Tameable tameable = (Tameable)e;
             if (tameable.isTamed()) tameable.setOwner(player);
@@ -97,8 +103,11 @@ public class SpawnEggListener implements Listener {
         Location loc = event.getBlock().getLocation();
         SpawnEggMeta meta = (SpawnEggMeta)event.getItem().getItemMeta();
         EntityType et = meta.getSpawnedType();
-        if (et == null || et.getEntityClass() == null || !plugin.getConfiguration().canRelease(et)) {
-            plugin.getLogger().warning(String.format("%s was dispensed from spawn egg at %s,%d,%d,%d without permission!", (et != null ? Util.enumToHuman(et.name()) : "null"), loc.getWorld().getName(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ()));
+        if (et == null || et.getEntityClass() == null) return;
+        if (!plugin.getConfiguration().canRelease(et)) {
+            if (plugin.getConfiguration().isDebugMode()) {
+                plugin.getLogger().warning(String.format("%s was dispensed from spawn egg at %s,%d,%d,%d without permission!", (et != null ? Util.enumToHuman(et.name()) : "null"), loc.getWorld().getName(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ()));
+            }
             return;
         }
         ItemStack item = event.getItem();
@@ -144,7 +153,9 @@ public class SpawnEggListener implements Listener {
             Entity e = event.getEntity();
             //if (e.getType() == EntityType.PIG_ZOMBIE && event.getLocation().getBlock().getType() == Material.PORTAL) return;
             Location loc = e.getLocation();
-            plugin.getLogger().warning(String.format("%s was spawned from egg in %s at %d,%d,%d without a cause!", Util.enumToHuman(e.getType().name()), loc.getWorld().getName(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ()));
+            if (plugin.getConfiguration().isDebugMode()) {
+                plugin.getLogger().warning(String.format("%s was spawned from egg in %s at %d,%d,%d without a cause!", Util.enumToHuman(e.getType().name()), loc.getWorld().getName(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ()));
+            }
             event.setCancelled(true);
             break;
         }

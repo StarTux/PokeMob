@@ -38,6 +38,8 @@ public class Dirty {
             NBTTagCompound tag = item.getTag().getCompound("EntityTag");
             net.minecraft.server.v1_12_R1.Entity nmsEntity = ((CraftEntity)e).getHandle();
             nmsEntity.c(tag);
+            // 8 = String
+            if (!tag.hasKeyOfType("id", 8)) throw new IllegalArgumentException("Entity did not cooperate to be eggified: " + e);
             // Clean her up a bit
             for (String name: REMOVE_NBT_TAGS) tag.remove(name);
             NBTTagList tagList = tag.getList("Attributes", 10);
@@ -54,6 +56,7 @@ public class Dirty {
             result = CraftItemStack.asBukkitCopy(item);
         } catch (Exception ex) {
             ex.printStackTrace();
+            return null;
         }
         return result;
     }

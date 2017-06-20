@@ -61,7 +61,7 @@ public class Util {
         Location loc = e.getLocation();
         e.getWorld().dropItemNaturally(loc, stack);
         e.getEquipment().clear();
-        if (e instanceof AbstractHorse) ((AbstractHorse)e).getInventory().clear();
+        if (e instanceof InventoryHolder) ((InventoryHolder)e).getInventory().clear();
         e.remove();
     }
 
