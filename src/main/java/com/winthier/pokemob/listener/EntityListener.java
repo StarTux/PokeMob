@@ -23,7 +23,7 @@ public class EntityListener implements Listener {
     @Getter @Setter EntityType expectedEntity;
     @Getter @Setter Entity spawnedEntity;
 
-    @EventHandler(ignoreCancelled = true, priority = EventPriority.NORMAL)
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void onEntityDeath(EntityDeathEvent event) {
         LivingEntity e = event.getEntity();
         if (e.getType() == EntityType.VILLAGER && e.getLastDamageCause() instanceof EntityDamageByEntityEvent && ((EntityDamageByEntityEvent)e.getLastDamageCause()).getDamager().getType() == EntityType.ZOMBIE) return;
