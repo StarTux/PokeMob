@@ -27,7 +27,7 @@ public class Dirty {
     // either have an owner or don't.  Therefore, we may not
     // delete OwnerUUID.
     final static List<String> REMOVE_NBT_TAGS = Arrays.asList(
-        "Pos", "Rotation", "Motion", "FallDistance", "OnGround", "Dimension", "PortalCooldown", "UUIDMost", "UUIDLeast", "UUID", "Passengers", "HurtByTimestamp", "WorldUUIDLeast", "WorldUUIDMost", "Spigot.ticksLived", "Bukkit.updateLevel", "Leashed", "Leash"
+                                                              "Pos", "Rotation", "Motion", "FallDistance", "OnGround", "Dimension", "PortalCooldown", "UUIDMost", "UUIDLeast", "UUID", "Passengers", "HurtByTimestamp", "WorldUUIDLeast", "WorldUUIDMost", "Spigot.ticksLived", "Bukkit.updateLevel", "Leashed", "Leash", "APX", "APY", "APZ"
         );
     public static ItemStack eggify(org.bukkit.entity.Entity e) {
         ItemStack result = new org.bukkit.inventory.ItemStack(Material.MONSTER_EGG, 1);
@@ -69,6 +69,7 @@ public class Dirty {
             NBTTagCompound compound = item.getTag().getCompound("EntityTag");
             int size = compound.d();
             if (size < 2) return null;
+            for (String name: REMOVE_NBT_TAGS) compound.remove(name);
             return compound.toString();
         } catch (Exception e) {
             e.printStackTrace();
