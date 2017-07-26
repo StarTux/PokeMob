@@ -135,19 +135,17 @@ public class Util {
         // Set the name
         if (meta != null && meta.hasDisplayName()) {
             living.setCustomName(ChatColor.translateAlternateColorCodes('&', meta.getDisplayName()));
-            living.setCustomNameVisible(true);
             living.setRemoveWhenFarAway(false);
         }
         return living;
     }
 
     public static boolean isPokeMob(LivingEntity e) {
-        if (!e.isCustomNameVisible()) return false;
         String customName = e.getCustomName();
         if (customName == null) return false;
         if (ChatColor.stripColor(customName).isEmpty()) return false;
         if (customName.charAt(0) != ChatColor.COLOR_CHAR) return false;
-        if (customName.charAt(0) == ChatColor.RESET.getChar()) return false;
+        if (customName.length() < 2 || customName.charAt(1) == ChatColor.RESET.getChar()) return false;
         return true;
     }
 
