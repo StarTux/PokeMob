@@ -121,7 +121,6 @@ public class PokeBallItem implements CustomItem, UncraftableItem, UpdatableItem 
                     break;
                 }
                 if (!located) return;
-                state.update();
                 SplashPotion potion = loc.getWorld().spawn(loc, SplashPotion.class, new Consumer<SplashPotion>() {
                     @Override public void accept(SplashPotion pot) {
                         ItemStack item = pot.getItem();
